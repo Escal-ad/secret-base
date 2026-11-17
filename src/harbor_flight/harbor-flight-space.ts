@@ -1,7 +1,7 @@
 import { MAP } from '../harbor_expansion/harbor-map-config'
 import { canWalkAt, findSupportHeight, WALKABLE } from '../pixel_harbor/harbor_layout'
 import type { WorldObstacle } from '../pixel_harbor/harbor_layout'
-import { MOVEMENT } from '../pixel_harbor/harbor_movement_config'
+import { MOVEMENT, SWIM } from '../pixel_harbor/harbor_movement_config'
 import type { CameraObstacle } from '../pixel_harbor/harbor_orbit_camera'
 import { cameraFloor, DECK } from '../pixel_harbor/harbor_terrain'
 import { FLIGHT } from './harbor-flight-config'
@@ -43,7 +43,8 @@ export function createFlightSpace(walking: readonly WorldObstacle[], solids: rea
     && z > box.near && z < box.far && y < box.top && y + FLIGHT.bodyHeight > box.bottom)
   return {
     landing({ x, z }: FlightPosition) {
-      if (!canWalkAt(x, z, { height: 0, obstacles: [] })) return 'water'
+      // 海面不再拒绝降落：返回水面高度，由落地钩子切换成游泳状态。
+      if (!canWalkAt(x, z, { height: 0, obstacles: [] })) return SWIM.waterLevel
       const y = flightFloor({ x, z })
       if (canWalkAt(x, z, { height: 0, obstacles: walking }) && !blocked({ x, y, z })) return y
       // Over a structure: land on its roof surface instead of refusing the landing.

@@ -33,6 +33,7 @@ export const AUDIO = {
     fishBite: effect('fish_bite.mp3',0.85), fishReel: effect('fish_reel.mp3',0.65),
     wishChime: effect('wish_chime.mp3',0.55),
     character: effect('character.mp3', 1, { limit: 2 }),
+    swim: effect('swim.mp3', 0.62),
   },
 } as const
 

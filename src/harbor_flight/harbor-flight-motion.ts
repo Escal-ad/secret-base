@@ -74,7 +74,7 @@ export function createFlightMotion(player: HarborPlayer, space: FlightSpace, hoo
   function landingFloor() {
     const result = space.landing(point)
     if (typeof result !== 'number' && !warned) {
-      hooks.notice(result === 'water' ? FLIGHT.ui.water : FLIGHT.ui.blocked)
+      hooks.notice(FLIGHT.ui.blocked)
       warned = true
     }
     return result

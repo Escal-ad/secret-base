@@ -39,7 +39,18 @@ export const ORBIT = {
   obstacleClearance: 0.23,
   minObstructedDistance: 0.28,
   vesselDistance: 6.6,
+  swimDistance: -0.9,
 }
+
+export const SWIM = {
+  // 海面高度：cameraFloor 在可行走区域之外返回 0，漂浮的船也停在这一水平。
+  waterLevel: 0,
+  // 人物根节点在水面下方的距离。绘制位置 = DECK + elevation + height，
+  // 因此限定的 height 由 harbor_player_motion 里的 FLOAT_HEIGHT 推算，不在这里手写。
+  floatSink: 0.7,
+  speedFactor: 0.55,
+  paddleInterval: 0.85,
+} as const
 
 export const JUMP = {
   lift: 4.5,

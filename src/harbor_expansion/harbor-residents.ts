@@ -17,7 +17,7 @@ function makeResident(kit: ModelKit, entry: typeof RESIDENTS.people[number], ind
   umbrella.position.set(0.25, 1.02, 0.13)
   actor.avatar.add(umbrella)
   const pose: HarborPlayer = { x, z, facing: index, elevation: groundElevation(x,z), speed: 0, height: 0,
-    landing: 0, jumpAge: 0, airborne: false, lookout: false, sitting: false, sailing: false }
+    landing: 0, jumpAge: 0, airborne: false, lookout: false, sitting: false, sailing: false, swimming: false }
   return { actor, pose, umbrella, spot: {x,z}, index, time: index * 3, accumulated: 0,
     title: entry.name || `村民 ${index + 1}`, note: [entry.job, entry.line].filter(Boolean).join(' · ') || RESIDENTS.placeholder }
 }

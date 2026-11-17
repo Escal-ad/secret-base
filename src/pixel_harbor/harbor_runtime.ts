@@ -40,7 +40,7 @@ import type { Footprint, WorldObstacle } from './harbor_layout'
 import { createLabelProjection } from './harbor_label_projection'
 import type { ProjectedLabel } from './harbor_label_projection'
 import { createModelKit } from './harbor_models'
-import { JUMP, MOVEMENT, ORBIT } from './harbor_movement_config'
+import { JUMP, MOVEMENT, ORBIT, SWIM } from './harbor_movement_config'
 import { NEW_LANDMARK_OBSTACLES } from './harbor_new_landmarks'
 import { createOrbitCamera } from './harbor_orbit_camera'
 import { createPixelAlignment } from './harbor_pixel_alignment'
@@ -249,7 +249,11 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
   const flight = createFlightMotion(player, createFlightSpace(obstacles, [
     ...cameraObstacles, ...world.flightVolumes, ...FOREST_FLIGHT_VOLUMES, ...HILL_FLIGHT_VOLUMES,
   ]), { change: options.onFlight, notice: options.onFlightNotice,
-    land: (point: { x: number; y: number; z: number }) => motion.teleport(point, point.y), recover: motion.respawn })
+    land: (point: { x: number; y: number; z: number }) =>
+      canWalkAt(point.x, point.z, { obstacles: [], height: 0 })
+        ? motion.teleport(point, point.y)
+        : motion.swim(point),
+    recover: motion.respawn })
   const sailing = createHarborSailing(vessel, player, () => extension.weather.frame.ice)
   const orbit = createOrbitCamera(camera, cameraObstacles)
   const first = createFirstCamera(camera)
@@ -431,12 +435,27 @@ function createSceneFrame(options: RuntimeOptions, view: {
   const glow = createHarborGlow(scene, options.simplified)
   const wake = createHarborWake(scene)
   let lastHotspot: string | undefined
+  let swimming = false
+  let paddle = 0
   const flightAudio = createFlightAudio(options.play)
   const draw: SceneTick = (step, elapsed, reduced, frameTime) => {
     const prefs=options.settings()
     reduced ||= prefs.reduced
     session.advanceActivity(activity.mode === 'sunset' ? Math.min(frameTime, 0.25) : step)
     session.update(step)
+    if (player.swimming !== swimming) {
+      swimming = player.swimming
+      options.onFlightNotice(swimming ? FLIGHT.ui.swim : FLIGHT.ui.shore)
+    }
+    if (player.swimming) {
+      paddle += step
+      if (paddle >= SWIM.paddleInterval) {
+        paddle = 0
+        if (player.speed > MOVEMENT.movementThreshold) {
+          options.play('swim', { volume: Math.min(0.85, 0.35 + player.speed * 0.14) })
+        }
+      }
+    } else paddle = 0
     quality.sample(frameTime)
     const night = light.step(Math.min(frameTime, 0.25))
     const dusk = activity.dusk

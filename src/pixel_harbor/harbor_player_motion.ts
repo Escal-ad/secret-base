@@ -1,21 +1,33 @@
 import { dampAngle, dampingFactor, RESPONSE_FACTOR } from './harbor_damping'
 import { canWalkAt, findRespawnPoint, findSupportHeight, SPAWN } from './harbor_layout'
 import type { WorldObstacle } from './harbor_layout'
-import { JUMP, MOVEMENT } from './harbor_movement_config'
+import { JUMP, MOVEMENT, SWIM } from './harbor_movement_config'
+import { SAILING } from './harbor_sailing_config'
 import { LOOKOUT } from './harbor_exploration_config'
 import { DECK, groundElevation } from './harbor_terrain'
 
 const COLLISION_SEARCH_STEPS = 8
+// 人物根节点的绘制位置是 DECK + elevation + height，水面在 y = 0，
+// 因此游泳时的 height 由「水面 + 没入深度」反推，避免在 config 里手写两处。
+const FLOAT_HEIGHT = -(DECK + SWIM.floatSink)
 type PlanarVector = { x: number; z: number }
 export type HarborPlayer = PlanarVector & {
   facing: number; speed: number; height: number; airborne: boolean; jumpAge: number; landing: number; sailing: boolean;
-  elevation: number; lookout: boolean; sitting: boolean;
+  elevation: number; lookout: boolean; sitting: boolean; swimming: boolean;
+}
+
+function canSwim(point: PlanarVector) {
+  const [left, right, near, far] = SAILING.bounds
+  return point.x >= left && point.x <= right && point.z >= near && point.z <= far
 }
 
 function canStand(player: HarborPlayer, point: PlanarVector, obstacles: readonly WorldObstacle[]) {
-  if (!player.lookout) return canWalkAt(point.x, point.z, { obstacles, height: player.height })
-  const radius = Math.hypot(point.x - LOOKOUT.center.x, point.z - LOOKOUT.center.z)
-  return radius >= LOOKOUT.lanternRadius + MOVEMENT.playerRadius && radius <= LOOKOUT.outerRadius - MOVEMENT.playerRadius
+  if (player.lookout) {
+    const radius = Math.hypot(point.x - LOOKOUT.center.x, point.z - LOOKOUT.center.z)
+    return radius >= LOOKOUT.lanternRadius + MOVEMENT.playerRadius && radius <= LOOKOUT.outerRadius - MOVEMENT.playerRadius
+  }
+  if (player.swimming) return canSwim(point)
+  return canWalkAt(point.x, point.z, { obstacles, height: player.height })
 }
 
 function slideAxis(position: HarborPlayer, obstacles: readonly WorldObstacle[], step: { axis: keyof PlanarVector; distance: number }) {
@@ -63,7 +75,7 @@ function createVerticalMotion(player: HarborPlayer, obstacles: readonly WorldObs
   let velocity = 0
   return {
     jump() {
-      if (player.airborne || player.sailing || player.lookout || player.sitting) return
+      if (player.airborne || player.sailing || player.lookout || player.sitting || player.swimming) return
       const support = findSupportHeight(player.x, player.z, { obstacles, height: player.height })
       if (player.height > support + JUMP.landingTolerance) return
       velocity = JUMP.lift
@@ -100,22 +112,33 @@ function worldDirection(direction: PlanarVector, yaw: number) {
 export function createPlayerMotion(obstacles: readonly WorldObstacle[]) {
   const player: HarborPlayer = { x: SPAWN.x, z: SPAWN.z, facing: SPAWN.yaw + Math.PI,
     speed: 0, height: 0, airborne: false, jumpAge: 0, landing: 0, sailing: false,
-    elevation: 0, lookout: false, sitting: false }
+    elevation: 0, lookout: false, sitting: false, swimming: false }
   const velocity = { x: 0, z: 0 }
   const vertical = createVerticalMotion(player, obstacles)
   const footprints = obstacles.map(obstacle => obstacle.footprint)
   function update(seconds: number, direction: PlanarVector, yaw: number) {
     if (seconds <= 0) return
     const target = worldDirection(direction, yaw)
+    if (player.swimming) { target.x *= SWIM.speedFactor; target.z *= SWIM.speedFactor }
     const response = target.x || target.z ? MOVEMENT.accelerationTime : MOVEMENT.decelerationTime
     const { x: startX, z: startZ } = player
     const steps = Math.ceil(seconds / MOVEMENT.maxCollisionStep)
     player.landing = Math.max(0, player.landing - seconds)
     for (let index = 0; index < steps; index++) {
-      if (!player.lookout) vertical.update(seconds / steps)
+      if (!player.lookout && !player.swimming) vertical.update(seconds / steps)
       advancePlayer(player, obstacles, { velocity, target, response, seconds: seconds / steps })
     }
     if (!player.lookout) player.elevation = groundElevation(player.x, player.z)
+    if (player.swimming) {
+      player.height = FLOAT_HEIGHT
+      player.airborne = false
+      player.landing = 0
+      // 游到岸边（脚下变成可走区域）自动上岸。
+      if (canWalkAt(player.x, player.z, { obstacles, height: 0 })) {
+        player.swimming = false
+        player.height = 0
+      }
+    }
     const dx = player.x - startX
     const dz = player.z - startZ
     player.speed = Math.hypot(dx, dz) / seconds
@@ -127,11 +150,16 @@ export function createPlayerMotion(obstacles: readonly WorldObstacle[]) {
   function positionAt(point: PlanarVector, height = 0) {
     vertical.reset()
     Object.assign(player, point, {
-      elevation: groundElevation(point.x, point.z), lookout: false, sitting: false, height,
+      elevation: groundElevation(point.x, point.z), lookout: false, sitting: false, swimming: false, height,
     })
   }
   const relocate = {
     jump: vertical.jump,
+    swim(point: PlanarVector) {
+      positionAt(point, FLOAT_HEIGHT)
+      player.swimming = true
+      return true
+    },
     teleport(point: PlanarVector, absoluteY?: number) {
       const height = absoluteY === undefined ? 0
         : Math.max(0, absoluteY - DECK - groundElevation(point.x, point.z))

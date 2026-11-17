@@ -7,7 +7,8 @@ const ENVELOPES: Partial<Record<Sound, readonly [number,number,OscillatorType]>>
 } as const
 const DEFAULT_NOISE = [340,0.6] as const
 const FILTERED_NOISE: Partial<Record<Sound, readonly [number,number]>> = {
-  fishCast:[1830,0.13], fishSplash:[840,0.26], fishReel:[1320,0.22], rain: [1150, 0.6], wind: [340, 0.6], cape: [620, 0.17] } as const
+  fishCast:[1830,0.13], fishSplash:[840,0.26], fishReel:[1320,0.22], rain: [1150, 0.6], wind: [340, 0.6], cape: [620, 0.17],
+  swim: [520, 0.3] } as const
 
 export function addAudioEffect(context: AudioContext, sound: Sound, output: AudioNode, level: number, pitch: number) {
   if (sound === 'gull' || sound === 'cat' || sound === 'dog') return null

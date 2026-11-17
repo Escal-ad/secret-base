@@ -75,6 +75,7 @@ export function createOrbitCamera(camera: T.PerspectiveCamera, obstacles: readon
       const pitch = flying ? Math.max(ORBIT.minPitch, target.pitch - FLIGHT.camera.pitch) : target.pitch
       orbit.pitch = T.MathUtils.lerp(orbit.pitch, pitch, turn)
       const distance = target.distance + (flying ? FLIGHT.camera.distance : 0)
+        + (player.swimming ? ORBIT.swimDistance : 0)
       orbit.distance = T.MathUtils.lerp(orbit.distance, distance, immediate ? 1 : dampingFactor(seconds, ORBIT.zoomTime))
       follow(player, orbit, { step: seconds, immediate })
     },
