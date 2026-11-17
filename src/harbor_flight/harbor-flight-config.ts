@@ -1,7 +1,7 @@
 export const FLIGHT = {
   enabledByDefault: true,
   speed: 5.4, sprintMultiplier: 1.55, accelerationTime: 0.38, brakingTime: 0.31, turnTime: 0.30,
-  climbSpeed: 3.35, descentSpeed: 2.85, verticalResponse: 0.24, launchSpeed: 2.25, landingSpeed: 2.75,
+  climbSpeed: 3.35, descentSpeed: 2.85, verticalResponse: 0.24, launchSpeed: 2.25, landingSpeed: 5.2,
   groundClearance: 0.75, waterClearance: 0.85, maximumAltitude: 17,
   mapMargin: 6, edgeBrake: 5, edgeFog: 0.041, bodyHeight: 1.57,
   propHeight: 1.10,
