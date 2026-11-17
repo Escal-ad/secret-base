@@ -28,6 +28,8 @@ export const SAILING = {
       yaw: Math.PI / 2 + 0.13, land: { x: -0.3, z: 11.42 } },
     { id: 'pier-dock', title: '栈桥泊位', note: '绿船可在此靠泊。', x: -4.55, z: -5.15,
       yaw: Math.PI / 2, land: { x: -4.55, z: -1.70 } },
+    { id: 'east-dock', title: '东堤码头', note: '南湾东侧的石堤，可在此靠岸与上下船。',
+      x: 16, z: 14.55, yaw: Math.PI / 2 - 0.06, land: { x: 16, z: 17.9 } },
   ],
   boardLabel: '上船',
   dockLabel: '下船',

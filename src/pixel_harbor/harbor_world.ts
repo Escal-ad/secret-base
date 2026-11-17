@@ -295,6 +295,15 @@ for (const [x, z] of [...pierPosts(PIER), ...pierPosts(LANDING)]) {
   WORLD_OBSTACLES.push([x - 0.18, x + 0.18, z - 0.18, z + 0.18])
 }
 
+// 东堤（石砌平台）的泊位配件：系缆桩沿北缘排布，靠水一侧加木护边。
+function addEastDockFittings(group: T.Group, kit: ModelKit) {
+  for (const x of [13, 16, 19]) {
+    group.add(kit.cylinder([x, DECK + 0.30, 16.62], [0.11, 0.13, 0.60, 8], ['#6d6154']))
+    group.add(kit.box([x, DECK + 0.60, 16.62], [0.26, 0.07, 0.26], ['#8a7a68']))
+  }
+  group.add(kit.box([16, DECK + 0.04, 16.34], [11.0, 0.12, 0.22], TIMBER))
+}
+
 function addTowerPorch(group: T.Group, kit: ModelKit) {
   const stone: Paint = ['#9d9484', 'brick']
   const lintel: Paint = ['#7b6a5c', 'wood']
@@ -312,6 +321,7 @@ function addTowerPorch(group: T.Group, kit: ModelKit) {
 export function addWorld(scene: T.Scene, kit = createModelKit()) {
   const staticWorld = new T.Group()
   addShore(staticWorld, kit)
+  addEastDockFittings(staticWorld, kit)
   addPier(staticWorld, kit, PIER)
   addPier(staticWorld, kit, LANDING)
   addVillage(staticWorld, kit)
