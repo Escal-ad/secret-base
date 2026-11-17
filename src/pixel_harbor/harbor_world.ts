@@ -244,7 +244,7 @@ function addBoats(scene: T.Scene, kit: ModelKit) {
   })
   // Look the sailable boat up by id rather than array position, so removing entries stays safe.
   const vessel = built[boats.findIndex(boat => boat.id === BOAT_VESSEL_ID)] ?? built[0]
-  return { boats: built, vessel }
+  return { boats: built, vessel, bases: boats.map(boat => boat.point) }
 }
 
 // 塔底门廊已移除：灯塔门前恢复原来的空地。
@@ -345,9 +345,18 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
   const treeTops = collectTreeTops(staticWorld)
   batchBlocks(staticWorld)
   scene.add(staticWorld)
-  const { boats, vessel } = addBoats(scene, kit)
+  const { boats, vessel, bases } = addBoats(scene, kit)
   const animate = (elapsed: number, bank: number) => {
     boats.forEach((boat, index) => {
+      // 除玩家能开的绿船外，其余渔船沿小圈缓慢巡游：离港有距离，但看得见。
+      if (boat !== vessel) {
+        const base = bases[index]
+        const radius = 2.4 + index * 0.6
+        const angle = elapsed * 0.055 + index * 1.7
+        boat.position.x = base[0] + Math.cos(angle) * radius
+        boat.position.z = base[2] + Math.sin(angle) * radius
+        boat.rotation.y = -angle + Math.PI * 0.5
+      }
       boat.position.y = 0.033 + Math.sin(elapsed * 1.41 + index) * 0.043
       boat.rotation.z = Math.sin(elapsed * 0.96 + index * 0.71) * 0.025
       boat.rotation.x = Math.sin(elapsed * 0.88 + index * 0.65) * 0.045 + (boat === vessel ? bank : 0)
