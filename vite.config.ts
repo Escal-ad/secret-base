@@ -7,6 +7,8 @@ import { config } from './src/site-config.ts'
 
 const LOCAL_ASSETS = 'virtual:harbor-local-assets'
 const ASSET_FOLDERS = ['assets/entry', 'assets/audio/music', 'assets/audio/sfx']
+const PAGES_BASE = '/secret-base/'
+const DEV_BASE = '/'
 
 function harborLocalAssets(): Plugin {
   return {
@@ -24,9 +26,10 @@ function harborLocalAssets(): Plugin {
   }
 }
 
-export default defineConfig({
+export default defineConfig(({ command, isPreview }) => ({
+  base: command === 'build' || isPreview ? PAGES_BASE : DEV_BASE,
   plugins: [react(), harborLocalAssets(), {
     name: 'harbor-site-title',
     transformIndexHtml(html) { return html.replace('%SITE_TITLE%', () => config.siteTitle) },
   }],
-})
+}))
