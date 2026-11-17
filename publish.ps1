@@ -26,6 +26,11 @@ if ($html -notmatch '/secret-base/assets/') {
 }
 Write-Host "  ok: /secret-base/assets/ found in index.html"
 
+Write-Host "== 2b/5 push source ==" -ForegroundColor Cyan
+# Push source alongside the build, otherwise main stays behind gh-pages.
+git push origin main 2>&1 | ForEach-Object { Write-Host "  $_" }
+if ($LASTEXITCODE -ne 0) { Fail 'push of main failed' }
+
 Write-Host "== 3/5 prepare worktree ==" -ForegroundColor Cyan
 git fetch origin 2>&1 | Out-Null
 $pages = Join-Path $env:TEMP ('sb-pages-' + [guid]::NewGuid().ToString('N'))
