@@ -53,7 +53,8 @@ export function createFlightSpace(walking: readonly WorldObstacle[], solids: rea
       if (ring >= LOOKOUT.lanternRadius && ring <= LOOKOUT.outerRadius) return DECK + LOOKOUT.platformOffset
       // Over a structure: land on its roof surface instead of refusing the landing.
       const roof = findSupportHeight(x, z, { obstacles: walking, height: Number.POSITIVE_INFINITY })
-      return roof > 0 ? y + roof : 'blocked'
+      // 不再拒绝降落：有可站立顶面就站在上面，否则直接落到地面。
+      return roof > 0 ? y + roof : y
     },
     clear({ x, y, z }: FlightPoint, clearance: boolean) {
       if (x < EDGE.left || x > EDGE.right || z < EDGE.near || z > EDGE.far || y > FLIGHT.maximumAltitude) return false
