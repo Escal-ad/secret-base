@@ -9,7 +9,12 @@ import { DECK, VILLAGE_PATHS } from './harbor_terrain'
 import { HILL } from '../harbor_expansion/harbor-hill-config'
 
 export type Footprint = readonly [minX: number, maxX: number, minZ: number, maxZ: number]
-export type WorldObstacle = { footprint: Footprint; height?: number }
+export type WorldObstacle = {
+  footprint: Footprint
+  height?: number
+  // 只提供站立支撑、不阻挡行走（例如树冠：可以落在树顶，但树干不挡路）。
+  supportOnly?: boolean
+}
 
 export { DECK }
 export const SPAWN = { x: -4, z: 0.65, yaw: -1.02 }
@@ -90,7 +95,7 @@ export function canWalkAt(x: number, z: number, { obstacles, height, radius }: {
   const feet = playerFootprint(x, z, radius)
   return contains(WATER.bounds, feet[0], feet[2]) && contains(WATER.bounds, feet[1], feet[3])
     && !WATER.cells.some(cell => overlaps(feet, cell))
-    && !obstacles.some(obstacle => (obstacle.height === undefined || height < obstacle.height)
+    && !obstacles.some(obstacle => !obstacle.supportOnly && (obstacle.height === undefined || height < obstacle.height)
       && overlaps(feet, obstacle.footprint))
 }
 

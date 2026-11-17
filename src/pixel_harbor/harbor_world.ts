@@ -1,5 +1,7 @@
 import * as T from 'three'
 import { DECK, HEADLAND, LANDING, PIER, SOUTH_QUAY, WEST_BANK } from './harbor_layout'
+import type { WorldObstacle } from './harbor_layout'
+import { groundElevation } from './harbor_terrain'
 import type { Footprint } from './harbor_layout'
 import { seededRandom } from './harbor_materials'
 import { markHarborGlow } from './harbor_glow'
@@ -255,6 +257,11 @@ export const HARBOR_STRUCTURES = [
   { footprint: [-26.9, -22.5, -5.3, -0.7], height: 3.9 },
 ] satisfies { footprint: Footprint; height: number }[]
 
+// 后村梯田里参与行走碰撞的那批房屋（tier 0），顶面高度按「相对地形」给出。
+export const TERRACE_ROOFS: { footprint: Footprint; height: number }[] = TERRACE_HOUSES
+  .filter(house => house.base === VILLAGE.upperY)
+  .map(house => ({ footprint: house.footprint, height: house.height }))
+
 export const WORLD_OBSTACLES: Footprint[] = [
   ...HARBOR_STRUCTURES.map(structure => structure.footprint),
   ...TERRACE_HOUSES.filter(house => house.base === VILLAGE.upperY).map(house => house.footprint),
@@ -294,6 +301,27 @@ function addEastDockFittings(group: T.Group, kit: ModelKit) {
   group.add(kit.box([16, DECK + 0.04, 16.34], [11.0, 0.12, 0.22], TIMBER))
 }
 
+// 树冠顶面：只提供站立支撑、不阻挡行走，所以 footprint 收进一点，
+// 让玩家必须接近树心才能站住，避免在树冠边缘悬空。
+function collectTreeTops(world: T.Group): WorldObstacle[] {
+  const box = new T.Box3()
+  const tops: WorldObstacle[] = []
+  world.traverse(object => {
+    if (object.name !== 'harbor-tree') return
+    box.setFromObject(object)
+    const inset = 0.14
+    const centerX = (box.min.x + box.max.x) / 2
+    const centerZ = (box.min.z + box.max.z) / 2
+    const height = box.max.y - DECK - groundElevation(centerX, centerZ)
+    if (height < 0.8 || box.max.x - box.min.x < inset * 3) return
+    tops.push({
+      footprint: [box.min.x + inset, box.max.x - inset, box.min.z + inset, box.max.z - inset],
+      height, supportOnly: true,
+    })
+  })
+  return tops
+}
+
 export function addWorld(scene: T.Scene, kit = createModelKit()) {
   const staticWorld = new T.Group()
   addShore(staticWorld, kit)
@@ -314,6 +342,7 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
   }
   addHarborLandmarks(staticWorld, kit)
   const flightVolumes = getFlightVolumes(staticWorld)
+  const treeTops = collectTreeTops(staticWorld)
   batchBlocks(staticWorld)
   scene.add(staticWorld)
   const { boats, vessel } = addBoats(scene, kit)
@@ -324,5 +353,5 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
       boat.rotation.x = Math.sin(elapsed * 0.88 + index * 0.65) * 0.045 + (boat === vessel ? bank : 0)
     })
   }
-  return { animate, vessel, flightVolumes }
+  return { animate, vessel, flightVolumes, treeTops }
 }

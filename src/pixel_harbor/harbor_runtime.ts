@@ -53,7 +53,7 @@ import type { TourCue } from './harbor_tour'
 import { findTravelLanding } from './harbor_travel'
 import { TERRACE_HOUSES, TERRACE_SOLIDS } from './harbor_village_plan'
 import { createHarborWake } from './harbor_wake'
-import { addWorld, HARBOR_STRUCTURES, WORLD_OBSTACLES } from './harbor_world'
+import { addWorld, HARBOR_STRUCTURES, TERRACE_ROOFS, WORLD_OBSTACLES } from './harbor_world'
 
 type RuntimeOptions = {
   mount: HTMLElement
@@ -201,21 +201,22 @@ function installExhibitPicking(exhibits: readonly Exhibit[], camera: T.Perspecti
 
 // Roof tops of landable structures. The lighthouse is excluded on purpose:
 // its platform belongs to the lookout activity, which teleports the player.
-const LANDABLE_ROOFS = HARBOR_STRUCTURES.slice(1)
+const LANDABLE_ROOFS = [...HARBOR_STRUCTURES.slice(1), ...TERRACE_ROOFS]
 
 function roofTop(footprint: Footprint) {
   return LANDABLE_ROOFS.find(item => item.footprint.every((value, index) => value === footprint[index]))?.height
 }
 
-function walkingObstacles(propObstacles: readonly Footprint[]): WorldObstacle[] {
+function walkingObstacles(propObstacles: readonly Footprint[], treeTops: readonly WorldObstacle[] = []): WorldObstacle[] {
   const { x, z } = CAPTAIN.position
   const radius = CAPTAIN_COLLISION_RADIUS
   const captain: Footprint = [x - radius, x + radius, z - radius, z + radius]
-  return [...WORLD_OBSTACLES, EVAL_STATION_OBSTACLE.footprint, ...FOREST_OBSTACLES, ...NEW_LANDMARK_OBSTACLES,
+  const ground = [...WORLD_OBSTACLES, EVAL_STATION_OBSTACLE.footprint, ...FOREST_OBSTACLES, ...NEW_LANDMARK_OBSTACLES,
     captain, ...propObstacles].map(footprint => ({
     footprint, height: JUMP.vaultable.find(item => item.footprint.every((value, index) => value === footprint[index]))?.height
       ?? roofTop(footprint),
   }))
+  return [...ground, ...treeTops]
 }
 
 function resolveInteraction(player: HarborPlayer, animals: ReturnType<typeof createHarborAnimals>, exhibits: readonly Exhibit[]) {
@@ -554,7 +555,7 @@ function startHarbor(options: RuntimeOptions, view: { renderer: T.WebGLRenderer;
   const pastimes = createHarborPastimes(scene,kit,{ play:options.play, notice:options.onQuality,
     fishing:options.onFishing, landed:()=>options.onOpen(FISHING.place) })
   const propObstacles = [...exhibitSet.obstacles, ...signObstacles]
-  const obstacles = [...walkingObstacles(propObstacles), pastimes.altar]
+  const obstacles = [...walkingObstacles(propObstacles, world.treeTops), pastimes.altar]
   const animals = createHarborAnimals({ scene, kit, obstacles, simplified: options.simplified })
   const extension=prepareSceneExtension({scene,camera,kit},{obstacles,animals,onChange:options.onScope,setAmbience:options.setAmbience})
   const session = installInteraction(options, camera, {
