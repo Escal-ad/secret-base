@@ -4,7 +4,7 @@ import { evalStation } from './eval_station_config'
 import { SAILING } from './harbor_sailing_config'
 import { PROFILE_UI } from './harbor_profile'
 import { CAPTAIN } from './harbor_captain_config'
-import { LOOKOUT, SUNSET, VILLAGE } from './harbor_exploration_config'
+import { KEEPER, LOOKOUT, SUNSET, VILLAGE } from './harbor_exploration_config'
 import { DECK, VILLAGE_PATHS } from './harbor_terrain'
 import { HILL } from '../harbor_expansion/harbor-hill-config'
 
@@ -48,6 +48,8 @@ export const HARBOR_DESTINATIONS = {
     radius: VILLAGE.radius, note: VILLAGE.note },
   captain: { kind: 'captain', id: CAPTAIN.id, label: CAPTAIN.action, ...CAPTAIN.position, radius: CAPTAIN.radius },
   hill: { kind: 'landmark', id: HILL.id, label: HILL.title, ...HILL.position, radius: HILL.radius, note: HILL.caption },
+  keeper: { kind: 'landmark', id: KEEPER.id, label: KEEPER.action, x: KEEPER.house.x, z: KEEPER.hotspot.z,
+    radius: KEEPER.hotspot.radius, note: KEEPER.note },
 } as const
 
 export const LANDMARKS = [

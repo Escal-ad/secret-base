@@ -1,5 +1,5 @@
 import * as T from 'three'
-import { SUNSET, VILLAGE } from './harbor_exploration_config'
+import { KEEPER, SUNSET, VILLAGE } from './harbor_exploration_config'
 import { FOREST } from './harbor_forest_config'
 import type { Footprint } from './harbor_layout'
 import { seededRandom } from './harbor_materials'
@@ -21,7 +21,7 @@ function growForest() {
       const x = cluster.x + Math.cos(angle) * spread
       const z = cluster.z + Math.sin(angle) * spread
       return { x, z, y: DECK + groundElevation(x, z), size: 0.74 + random() * 0.34 }
-    })
+    }).filter(({ x, z }) => Math.hypot(x - KEEPER.house.x, z - KEEPER.house.z) > KEEPER.clearRadius)
     return { ...cluster, trees }
   })
 }

@@ -23,6 +23,20 @@ export const LOOKOUT = {
   note: '待填写',
 } as const
 
+// 守塔人小屋：灯塔岬角上那栋石屋（harbor_world 的 placeHouse 第三栋）。
+export const KEEPER = {
+  id: 'keeper',
+  title: '守塔人',
+  action: '查看守塔人小屋',
+  // TODO(reason): 待用户填写守塔人小屋的地点介绍。
+  note: '待填写',
+  house: { x: -8, z: -21 },
+  // 这栋房子正压在森林集群 (-10.0, -20.45) 上，生成时清掉这个半径内的树。
+  clearRadius: 2.7,
+  signHeight: 4.45,
+  hotspot: { z: -19.15, radius: 2.0 },
+} as const
+
 export const VILLAGE = {
   id: 'upper-village',
   title: '后村林径',

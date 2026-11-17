@@ -1,6 +1,6 @@
 import * as T from 'three'
 import { PROFILE_UI } from './harbor_profile'
-import { SUNSET, VILLAGE } from './harbor_exploration_config'
+import { KEEPER, SUNSET, VILLAGE } from './harbor_exploration_config'
 import type { Footprint } from './harbor_layout'
 import { makeCanvas, pixelTexture } from './harbor_materials'
 import type { ModelKit, Paint } from './harbor_models'
@@ -78,6 +78,8 @@ export function addHarborLandmarks(world: T.Group, kit: ModelKit) {
   addTrail(group, kit)
   addBench(group, kit)
   group.add(nameplate(PROFILE_UI.title, [-22.57, 2.48, -3], Math.PI / 2))
+  // 守塔人小屋的牌子挂在屋顶正上方，正面朝海（+z）。
+  group.add(nameplate(KEEPER.title, [KEEPER.house.x, DECK + KEEPER.signHeight, KEEPER.house.z - 0.4], 0))
   world.add(group)
 }
 
