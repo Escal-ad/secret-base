@@ -351,8 +351,8 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
       // 除玩家能开的绿船外，其余渔船沿小圈缓慢巡游：离港有距离，但看得见。
       if (boat !== vessel) {
         const base = bases[index]
-        const radius = 2.4 + index * 0.6
-        const angle = elapsed * 0.055 + index * 1.7
+        const radius = 3.2 + index * 0.8
+        const angle = elapsed * 0.16 + index * 1.7
         boat.position.x = base[0] + Math.cos(angle) * radius
         boat.position.z = base[2] + Math.sin(angle) * radius
         boat.rotation.y = -angle + Math.PI * 0.5

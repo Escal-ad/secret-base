@@ -78,7 +78,7 @@ export function addHarborIslands(scene: T.Scene, kit: ModelKit) {
     islands, ships,
     update(time:number, state:{weather:number; tier:number}) {
       ships.forEach(({object,route:[x,z,u,v]}, i)=>{
-        const phase = time*0.027+i*1.03
+        const phase = time*0.115+i*1.03
         const span = (1+Math.sin(phase))/2
         object.position.set(x+(u-x)*span,0.04+Math.sin(time+i)*0.03,z+(v-z)*span)
         object.rotation.y=Math.atan2(-(v-z),u-x)+(Math.cos(phase)<0?Math.PI:0)
