@@ -77,11 +77,15 @@ export function addHarborIslands(scene: T.Scene, kit: ModelKit) {
   return {
     islands, ships,
     update(time:number, state:{weather:number; tier:number}) {
-      ships.forEach(({object,route:[x,z,u,v]}, i)=>{
-        const phase = time*0.115+i*1.03
-        const span = (1+Math.sin(phase))/2
-        object.position.set(x+(u-x)*span,0.04+Math.sin(time+i)*0.03,z+(v-z)*span)
-        object.rotation.y=Math.atan2(-(v-z),u-x)+(Math.cos(phase)<0?Math.PI:0)
+      ships.forEach(({object}, i)=>{
+        // 绕各自最近的岛转圈：半径按岛宽推算，速度比原航线更快。
+        const site = ISLANDS.positions[i % ISLANDS.positions.length]
+        const [cx, cz, width] = site
+        const radius = width * 0.9 + 2.6
+        const angle = time * 0.16 + i * 1.3
+        object.position.set(cx + Math.cos(angle) * radius, 0.04 + Math.sin(time + i) * 0.03,
+          cz + Math.sin(angle) * radius)
+        object.rotation.y = -angle + Math.PI * 0.5
         object.visible = i===0 || (state.weather<0.45 && state.tier<3)
       })
       islands.forEach(({object},i)=>{object.visible=state.tier<3 || i%2===0})
