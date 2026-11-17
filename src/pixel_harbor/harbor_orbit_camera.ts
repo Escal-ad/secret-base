@@ -73,7 +73,9 @@ export function createOrbitCamera(camera: T.PerspectiveCamera, obstacles: readon
     update(player: HarborPlayer, seconds: number, immediate = false) {
       const turn = immediate ? 1 : dampingFactor(seconds, ORBIT.orbitTime)
       orbit.yaw = dampAngle(orbit.yaw, target.yaw, turn)
-      const pitch = flying ? Math.max(ORBIT.minPitch, target.pitch - FLIGHT.camera.pitch) : target.pitch
+      const pitch = flying
+        ? T.MathUtils.clamp(target.pitch - FLIGHT.camera.pitch, ORBIT.flightMinPitch, ORBIT.flightMaxPitch)
+        : target.pitch
       orbit.pitch = T.MathUtils.lerp(orbit.pitch, pitch, turn)
       const distance = target.distance + (flying ? FLIGHT.camera.distance : 0)
         + (player.swimming ? ORBIT.swimDistance : 0)
@@ -86,8 +88,8 @@ export function createOrbitCamera(camera: T.PerspectiveCamera, obstacles: readon
       orbit.target = null
       target.yaw = (target.yaw - dx * ORBIT.lookSensitivity) % FULL_TURN
       target.pitch = T.MathUtils.clamp(target.pitch + dy * ORBIT.verticalLookSensitivity,
-        lookout ? LOOKOUT.minPitch : firstPerson ? ORBIT.firstMinPitch : ORBIT.minPitch,
-        lookout ? LOOKOUT.maxPitch : firstPerson ? ORBIT.firstMaxPitch : ORBIT.maxPitch)
+        lookout ? LOOKOUT.minPitch : flying ? ORBIT.flightMinPitch : firstPerson ? ORBIT.firstMinPitch : ORBIT.minPitch,
+        lookout ? LOOKOUT.maxPitch : flying ? ORBIT.flightMaxPitch : firstPerson ? ORBIT.firstMaxPitch : ORBIT.maxPitch)
     },
     zoom(direction: number) {
       target.distance = T.MathUtils.clamp(target.distance + direction * ORBIT.distancePerWheelStep,
@@ -99,7 +101,10 @@ export function createOrbitCamera(camera: T.PerspectiveCamera, obstacles: readon
         distance: lookout ? LOOKOUT.distance : sailing ? ORBIT.vesselDistance : ORBIT.distance })
     },
     setSailing(sailing: boolean) { target.distance = sailing ? ORBIT.vesselDistance : ORBIT.distance },
-    setFlight(active: boolean) { flying = active },
+    setFlight(active: boolean) {
+      flying = active
+      if (!active) target.pitch = T.MathUtils.clamp(target.pitch, ORBIT.minPitch, ORBIT.maxPitch)
+    },
     setFirstPerson(next: boolean) {
       if (firstPerson === next) return
       firstPerson = next

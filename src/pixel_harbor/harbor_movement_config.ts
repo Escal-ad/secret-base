@@ -31,6 +31,9 @@ export const ORBIT = {
   // 第一人称放开俯仰：负值抬头看天，正值低头。第三人称保持原范围。
   firstMinPitch: -1.50,
   firstMaxPitch: 0.90,
+  // 飞行时放开俯仰，便于在空中看天与找落点。
+  flightMinPitch: -1.40,
+  flightMaxPitch: 1.10,
   verticalLookSensitivity: 0.004,
   floorClearance: 0.28,
   aimTime: 0.55,
