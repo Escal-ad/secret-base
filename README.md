@@ -1,4 +1,4 @@
-# Little Prince's Secret Base
+# Escal's Secret Base
 
 在项目目录运行 `npm install` 和 `npm run dev`，打开终端列出的地址。首页先显示入口；点击「进入渔港」才加载 Three.js 并启动声音。「了解我」打开无需 WebGL 的普通阅读。3D 漫游需要 WebGL 2。用 `npm run build` 检查 TypeScript 并构建站点。
 

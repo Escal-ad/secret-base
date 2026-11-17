@@ -1,5 +1,5 @@
 export const config = {
-  siteTitle: "Little Prince's Secret Base",
+  siteTitle: "Escal's Secret Base",
   entry: {
     showSiteTitle: true,
     enterLabel: '进入渔港',
