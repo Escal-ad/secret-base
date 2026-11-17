@@ -28,7 +28,10 @@ function makeResident(kit: ModelKit, entry: typeof RESIDENTS.people[number], ind
   // 钓鱼：右臂举竿 + 一根鱼竿模型
   if (extra.fishing) {
     actor.setFishingArm(-1.18)
-    actor.detailAnchor.add(kit.beam([[0.22, 0.95, 0.2], [0.5, 1.72, 0.98]], 0.028, ['#8a6a4a']))
+    // 面向水面：长竿 + 鱼线 + 水面浮漂，远看也能认出在垂钓
+    actor.detailAnchor.add(kit.beam([[0.26, 1.02, 0.08], [0.36, 1.98, -1.38]], 0.032, ['#8a6a4a']))
+    actor.detailAnchor.add(kit.beam([[0.36, 1.98, -1.38], [0.38, -0.56, -1.66]], 0.013, ['#cdd8d6']))
+    actor.detailAnchor.add(kit.box([0.38, -0.56, -1.66], [0.10, 0.13, 0.10], ['#c0553f']))
   }
   const umbrella = makeUmbrella(kit)
   umbrella.position.set(0.25, 1.02, 0.13)
