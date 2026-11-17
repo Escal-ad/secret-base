@@ -6,6 +6,7 @@ import { prepareSceneExtension } from '../harbor_expansion/harbor-scene-extensio
 import type { SceneExtension } from '../harbor_expansion/harbor-scene-extension'
 import { createFirstCamera } from '../harbor_expansion/harbor-first-camera'
 import { createTravelAvatar } from '../harbor_expansion/harbor-traveler'
+import { addHarborMayor } from '../harbor_expansion/harbor-mayor'
 import { HILL_FLIGHT_VOLUMES } from '../harbor_expansion/harbor-hill'
 import { createFlightMotion } from '../harbor_flight/harbor-flight-motion'
 import { createFlightAudio } from '../harbor_flight/harbor-flight-audio'
@@ -435,9 +436,10 @@ function createSceneFrame(options: RuntimeOptions, view: {
     reflections: boolean; dusk: number; reduced: boolean; weather: WeatherFrame; bank: number; edgeFog: number
   }) => void;
   animals: ReturnType<typeof createHarborAnimals>; forest: ReturnType<typeof addHarborForest>
+  mayor: ReturnType<typeof addHarborMayor>
   extension: SceneExtension
 }) {
-  const { session, avatar, animate, animals, forest, extension } = frame
+  const { session, avatar, animate, animals, forest, extension, mayor } = frame
   const { player, tracker, places, cameraObstacles, sailing, activity, flight, pastimes } = session
   const { scene, camera, output, canvas } = view
   const marker = createHotspotMarker(scene)
@@ -481,6 +483,7 @@ function createSceneFrame(options: RuntimeOptions, view: {
     avatar(player, { fishingArm, settings: prefs, rain: weather.rain, first: first.blend, seconds: step, reduced,
       simplified: !quality.flags.cloth, yaw: first.yaw, flying: flight.active, bank: flight.bank })
     extension.residents.update(player,step,{night,rain:weather.rain,reduced,limit:low?3:!quality.flags.residents?4:Infinity})
+    mayor(night, weather.rain, step, reduced)
     extension.gulls.update(player,{time:motionTime,step,rain:weather.rain,snow:weather.snow,night,reduced,low:low||!quality.flags.gulls},
       distance=>options.play('gull',{distance}))
     extension.islands.update(motionTime,{weather:storm,tier:low?3:quality.tier})
@@ -547,6 +550,7 @@ function startHarbor(options: RuntimeOptions, view: { renderer: T.WebGLRenderer;
   const world = addWorld(scene, kit)
   addEvalStation(scene, kit)
   const forest = addHarborForest(scene, kit)
+  const mayor = addHarborMayor(scene, kit)
   const captain = addHarborCaptain(scene, { kit, vessel: world.vessel })
   const exhibitSet = addExhibits(scene, kit, options.artworks)
   cleanup.push(exhibitSet.dispose)
@@ -565,7 +569,7 @@ function startHarbor(options: RuntimeOptions, view: { renderer: T.WebGLRenderer;
   cleanup.push(session.dispose)
   const avatar = createTravelAvatar(scene,kit)
   const { draw, setNight } = createSceneFrame(options, { scene, camera, output, canvas }, {
-    session, avatar, forest, animals,extension,
+    session, avatar, forest, animals,extension, mayor,
     animate(elapsed, night, settings) {
       world.animate(elapsed, settings.bank)
       captain(elapsed, settings.reduced)
