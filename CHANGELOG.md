@@ -18,3 +18,7 @@
 | 入口与阅读 | 展台入口按需加载 3D，普通阅读无需 WebGL；地图提供地点标记、指路和传送，作品船及展架复用作品数据。 | `src/App.tsx`、`src/harbor_shell/harbor-entry-stage.tsx`、`src/harbor_shell/harbor-map.tsx`、`src/pixel_harbor/harbor_reading.tsx`、`src/pixel_harbor/harbor_art_catalog.ts` |
 
 ## [未发布]
+
+- 站名改为 Escal's Secret Base，唯一运行时来源为 `src/site-config.ts` 的 `config.siteTitle`。
+- 生产构建和预览使用 GitHub Pages 项目页路径 `/secret-base/`，开发仍使用 `/`；本地作品图也跟随同一前缀。
+- 新增 [GitHub Pages 部署说明](docs/DEPLOY.md)，记录手动发布步骤及 CI 路线的锁文件前置条件。

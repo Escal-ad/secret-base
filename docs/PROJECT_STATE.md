@@ -96,9 +96,9 @@
 | --- | --- |
 | Git | 此前没有提交历史，本次从首个现状基线开始；两份历史文档不是 Git 提交记录。初始基线 166 个文件，暂存对象内容合计 8,129,113 字节（不计 Git 对象压缩和索引开销）。 |
 | 依赖 | 5 个当前未引用的直接声明：`@astryxdesign/core`、`@astryxdesign/theme-neutral`、`@astryxdesign/build`、`@astryxdesign/cli`、`@stylexjs/stylex`。锁文件部分条目为指向父目录 pnpm 布局的链接；独立目录全新安装的可复现性待确认，本次未安装。 |
-| 内容 | 第 4 节所列配置仍有占位。站名是否涉及原作角色名称待所有者确认，现状未改。 |
+| 内容 | 第 4 节所列配置仍有占位。所有者已将站名定为 Escal's Secret Base，统一读取 `src/site-config.ts` 的 `config.siteTitle`。 |
 | 最大素材 | `public/assets/audio/music/` 的 `boy.mp3`（2,610,149 字节）、`baguira.mp3`（2,486,851 字节）、`sudo.mp3`（2,475,148 字节），共 7,572,148 字节（约 7.57 MB / 7.22 MiB）。 |
-| 部署 | 据所有者说明，本站从未上线；[另一个已上线的纯 HTML 站点](https://escal-ad.github.io)来自 `escal-ad.github.io` 仓库，与本站无关。本次未联网验证。本站计划后续用 GitHub Pages 项目页部署；当前 `vite.config.ts` 未设置该项目页的 `base`，也未提交部署工作流。部署不属本次范围。 |
+| 部署 | 据所有者说明，本站尚未上线；[另一个纯 HTML 站点](https://escal-ad.github.io)来自 `escal-ad.github.io` 仓库，与本站无关。本站生产构建和预览已配置 `/secret-base/`，开发仍用 `/`。尚未设置远程或部署工作流；手动步骤与 CI 限制见 [部署说明](DEPLOY.md)。 |
 
 ## 7. 尚待完成
 
@@ -106,10 +106,10 @@
 
 | 优先级 | 事项 | 关联阶段或文件 |
 | --- | --- | --- |
-| 高 | 补个人资料、可公开简历和项目链接；确认站名是否符合内容规则。 | 阶段 1；`src/pixel_harbor/harbor_profile.ts`、`src/site-config.ts` |
+| 高 | 补个人资料、可公开简历和项目链接。 | 阶段 1；`src/pixel_harbor/harbor_profile.ts` |
 | 高 | 补评测公开素材、来源标签与录屏等，替换正式作品。 | `src/pixel_harbor/eval_station_config.ts`、`src/pixel_harbor/harbor_art_catalog.ts` |
 | 中 | 补灯塔、后村、落日、船夫和路线讲解；核对动物显示用名及阶段交互。 | 阶段 2–3、4、5、6；`harbor_exploration_config.ts`、`harbor_animals_config.ts`、`harbor_captain_config.ts`（均在 `src/pixel_harbor/`） |
-| 中 | 低端手机真机重测；为后续部署验证干净安装、项目页资源路径和构建。 | `src/pixel_harbor/harbor_lighting_config.ts`、`package-lock.json`、`vite.config.ts` |
+| 中 | 低端手机真机重测；CI 前验证干净安装。项目页路径已在本地生产预览验证，线上发布仍待执行。 | `src/pixel_harbor/harbor_lighting_config.ts`、`package-lock.json`、[部署说明](DEPLOY.md) |
 | 低 | 完善村民台词、渔获介绍、瓶中信、可选愿望示例和可选声音素材。 | `src/harbor_expansion/harbor-resident-config.ts`、`src/harbor_pastimes/harbor-pastimes-config.ts`、`src/harbor_shell/harbor-audio-config.ts` |
 
 ## 8. 历史性能基线与当前降级
