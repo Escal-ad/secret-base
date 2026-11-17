@@ -50,6 +50,13 @@ export const SWIM = {
   floatSink: 0.7,
   speedFactor: 0.55,
   paddleInterval: 0.85,
+  // 划水动作：身体前倾 + 手臂前后划 + 打腿 + 轻微浮沉。
+  lean: 0.38,
+  armSweep: 0.85,
+  armSpread: 0.30,
+  kick: 0.42,
+  bob: 0.05,
+  strokeRate: 2.2,
 } as const
 
 export const JUMP = {

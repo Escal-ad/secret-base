@@ -2,7 +2,7 @@ import * as T from 'three'
 import { batchActorBoxes } from './harbor_actor_boxes'
 import { DECK } from './harbor_layout'
 import type { ModelKit, Point } from './harbor_models'
-import { AVATAR_APPEARANCE, JUMP, MOVEMENT } from './harbor_movement_config'
+import { AVATAR_APPEARANCE, JUMP, MOVEMENT, SWIM } from './harbor_movement_config'
 import type { HarborPlayer } from './harbor_player_motion'
 
 const VOXEL = 0.065
@@ -115,6 +115,7 @@ export function createHarborAvatar(kit: ModelKit, appearance: Appearance = AVATA
   avatar.add(body, shadow)
   let fishingArm: number | undefined
   let phase = 0
+  let swimPhase = 0
   let flightPose = { blend: 0, lean: 0, bank: 0, arms: 0 }
   return {
     avatar,
@@ -129,7 +130,8 @@ export function createHarborAvatar(kit: ModelKit, appearance: Appearance = AVATA
     update(player: HarborPlayer, seconds: number, reduced: boolean) {
       avatar.position.set(player.x, DECK + player.elevation, player.z)
       avatar.rotation.y = player.facing
-      const stride = player.speed < MOVEMENT.movementThreshold || reduced || player.sailing || player.airborne
+      const stride = player.speed < MOVEMENT.movementThreshold || reduced || player.sailing
+        || player.airborne || player.swimming
         ? 0 : Math.min(player.speed / MOVEMENT.walkSpeed, 1)
       const cycle = player.speed * seconds / WALK_CYCLE_DISTANCE * FULL_TURN
       phase = (phase + cycle) % FULL_TURN
@@ -138,6 +140,9 @@ export function createHarborAvatar(kit: ModelKit, appearance: Appearance = AVATA
       const rebound = reduced ? 0 : Math.sin(Math.PI * player.landing / JUMP.recovery)
       body.position.y = player.height + Math.abs(Math.sin(phase)) * stride * BOB_HEIGHT
       body.scale.y = 1 - launch * JUMP.launchSquat - rebound * JUMP.landingSquat
+      // 每帧从零开始，避免离开飞行/游泳后手臂外张的残留角度。
+      leftArm.rotation.z = 0
+      rightArm.rotation.z = 0
       const airArm = player.airborne ? JUMP.airArm * (1 - launch) : 0
       const airLeg = player.airborne ? JUMP.airLeg * (1 - launch) : 0
       leftLeg.rotation.x = swing + airLeg
@@ -161,7 +166,21 @@ export function createHarborAvatar(kit: ModelKit, appearance: Appearance = AVATA
         leftLeg.rotation.x *= 1 - blend
         rightLeg.rotation.x *= 1 - blend
       }
-      shadow.visible = !blend
+      // 游泳：身体前倾、手臂交替划水、双腿打水。reduced 时只保留轻微幅度。
+      if (player.swimming && !blend) {
+        swimPhase = (swimPhase + seconds * (SWIM.strokeRate + player.speed * 0.9)) % FULL_TURN
+        const stroke = reduced ? 0.35 : Math.sin(swimPhase)
+        const kick = reduced ? 0.2 : Math.sin(swimPhase * 2.3)
+        body.rotation.set(SWIM.lean, 0, 0)
+        body.position.y = player.height + (reduced ? 0 : Math.sin(swimPhase * 2) * SWIM.bob)
+        leftArm.rotation.x = -SWIM.armSweep * (0.5 + 0.5 * stroke)
+        rightArm.rotation.x = -SWIM.armSweep * (0.5 - 0.5 * stroke)
+        leftArm.rotation.z = SWIM.armSpread
+        rightArm.rotation.z = -SWIM.armSpread
+        leftLeg.rotation.x = kick * SWIM.kick
+        rightLeg.rotation.x = -kick * SWIM.kick
+      }
+      shadow.visible = !blend && !player.swimming
       updateBoxes()
     },
   }
