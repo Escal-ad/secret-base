@@ -22,6 +22,8 @@ const JUMP_PEAK = JUMP.lift ** 2 / (2 * JUMP.gravity)
 type Appearance = typeof AVATAR_APPEARANCE & {
   skin?: string; boots?: string; traveler?: boolean; badge?: string; hairstyle?: string;
   shoulderBag?: boolean; faceVariant?: number;
+  // 头饰变体：默认按 hat 推导，村民用它区分渔帽/头巾。
+  headwear?: 'straw' | 'cap' | 'bandana' | 'none';
 }
 
 function scaled([x, y, z]: Point): Point {
@@ -49,10 +51,17 @@ function makeHead(kit: ModelKit, appearance: Appearance) {
     head.add(kit.box(scaled([0,17.7+(variant%3)*0.19,3.05]),scaled([1.1+(variant%3)*0.38,0.27,0.15]),['#614947']))
     head.add(kit.box(scaled([variant%2?1.42:-1.52,22.8,-0.97]),scaled([3.2,1.6+variant*0.10,3.3]),[hair]))
   }
-  if (hat) {
+  const headwear = appearance.headwear ?? (hat ? 'straw' : 'none')
+  if (headwear === 'straw') {
     head.add(kit.box(scaled([0, 22.25, 0.35]), scaled([9.5, 0.9, 8.5]), [HAT]))
     head.add(kit.box(scaled([0, 23.45, 0]), scaled([7.25, 1.45, 6.3]), [HAT_BAND]))
     head.add(kit.box(scaled([0, 24.15, 0]), scaled([6.65, 1.03, 5.75]), [HAT]))
+  } else if (headwear === 'cap') {
+    head.add(kit.box(scaled([0, 22.9, 0]), scaled([7.6, 2.1, 6.8]), ['#5d5a52']))
+    head.add(kit.box(scaled([0, 22.5, 3.4]), scaled([7.9, 0.55, 2.2]), ['#4e4b45']))
+  } else if (headwear === 'bandana') {
+    head.add(kit.box(scaled([0, 21.7, 0]), scaled([7.7, 1.5, 6.8]), ['#a2544c']))
+    head.add(kit.box(scaled([0, 21.1, -3.05]), scaled([2.0, 1.6, 1.4]), ['#8d453f']))
   }
   return head
 }

@@ -12,7 +12,12 @@ import { dampAngle, dampingFactor } from '../pixel_harbor/harbor_damping'
 
 function makeResident(kit: ModelKit, entry: typeof RESIDENTS.people[number], index: number) {
   const [x, z] = entry.spot
+  const extra = entry as { build?: readonly [number, number, number]; apron?: string }
   const actor = createHarborAvatar(kit, { ...entry, traveler: false, faceVariant: index })
+  // 体型：不同村民高矮胖瘦不同，靠缩放区分轮廓。
+  if (extra.build) actor.avatar.scale.set(extra.build[0], extra.build[1], extra.build[2])
+  // 围裙：贴在身前的一小块布，让渔民和普通人一眼分得开。
+  if (extra.apron) actor.detailAnchor.add(kit.box([0, 0.55, 0.155], [0.30, 0.42, 0.04], [extra.apron]))
   const umbrella = makeUmbrella(kit)
   umbrella.position.set(0.25, 1.02, 0.13)
   actor.avatar.add(umbrella)
