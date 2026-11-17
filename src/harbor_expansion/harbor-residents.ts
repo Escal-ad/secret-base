@@ -95,7 +95,7 @@ export function addHarborResidents(scene: T.Scene, kit: ModelKit, obstacles: rea
             person.sheltering = true
             continue
           }
-          actor.avatar.visible = index < options.limit
+          actor.avatar.visible = index < options.limit || person.fishing
           person.accumulated += step
           if (person.accumulated < RESIDENTS.cadence) continue
           const walk = person.accumulated; person.accumulated = 0
@@ -106,7 +106,7 @@ export function addHarborResidents(scene: T.Scene, kit: ModelKit, obstacles: rea
           continue
         }
         person.sheltering = false
-        actor.avatar.visible = index < options.limit
+        actor.avatar.visible = index < options.limit || person.fishing
         const close = Math.hypot(player.x-pose.x,player.z-pose.z) < RESIDENTS.activityRadius
         person.accumulated += step
         if (!close && person.accumulated < RESIDENTS.cadence) continue
