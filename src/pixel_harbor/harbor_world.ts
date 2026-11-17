@@ -222,22 +222,27 @@ function batchBlocks(group: T.Group) {
   }
 }
 
+const BOAT_VESSEL_ID = 'vessel'
+
 function addBoats(scene: T.Scene, kit: ModelKit) {
   const boats = [
-    { point: [4.8, 0.035, -5.0], yaw: -0.12, size: 1.22, color: '#537984' },
-    { point: [-0.3, 0.025, 8.8], yaw: 0.13, size: 1, color: '#65866e' },
-    { point: [8, 0.02, 8.6], yaw: -0.37, size: 0.83, color: '#b47456' },
-    { point: [42, 0.03, -8], yaw: 0.62, size: 0.75, color: '#7a827d' },
-    { point: [64, 0.03, -26], yaw: -0.28, size: 0.8, color: '#9c785b' },
+    { id: 'north-shore', point: [4.8, 0.035, -5.0], yaw: -0.12, size: 1.22, color: '#537984' },
+    { id: BOAT_VESSEL_ID, point: [-0.3, 0.025, 8.8], yaw: 0.13, size: 1, color: '#65866e' },
+    { id: 'east-shoal', point: [42, 0.03, -8], yaw: 0.62, size: 0.75, color: '#7a827d' },
+    { id: 'outer-cay', point: [64, 0.03, -26], yaw: -0.28, size: 0.8, color: '#9c785b' },
   ] as const
-  return boats.map(({ point, yaw, size, color }) => {
+  const built = boats.map(({ id, point, yaw, size, color }) => {
     const boat = makeBoat(kit, color)
+    boat.name = `harbor-boat-${id}`
     boat.position.set(point[0], point[1], point[2])
     boat.rotation.y = yaw
     boat.scale.setScalar(size)
     scene.add(boat)
     return boat
   })
+  // Look the sailable boat up by id rather than array position, so removing entries stays safe.
+  const vessel = built[boats.findIndex(boat => boat.id === BOAT_VESSEL_ID)] ?? built[0]
+  return { boats: built, vessel }
 }
 
 export const HARBOR_STRUCTURES = [
@@ -299,8 +304,7 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
   const flightVolumes = getFlightVolumes(staticWorld)
   batchBlocks(staticWorld)
   scene.add(staticWorld)
-  const boats = addBoats(scene, kit)
-  const vessel = boats[1]
+  const { boats, vessel } = addBoats(scene, kit)
   const animate = (elapsed: number, bank: number) => {
     boats.forEach((boat, index) => {
       boat.position.y = 0.033 + Math.sin(elapsed * 1.41 + index) * 0.043
