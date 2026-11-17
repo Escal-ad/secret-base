@@ -33,3 +33,6 @@ hy_nomas_bench/
 video_eval_workbench/
 bench4_generation_inputs.zip
 *.npz
+
+# 本地视觉参考图，仅给 AI 看，不进仓库
+docs/refs/
