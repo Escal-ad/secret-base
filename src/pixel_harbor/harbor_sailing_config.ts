@@ -25,11 +25,13 @@ export const SAILING = {
   wakeMinimumSpeed: 0.62,
   docks: [
     { id: 'south-dock', title: '南湾码头', note: '绿船初始停泊处。', x: -0.3, z: 8.8,
-      yaw: Math.PI / 2 + 0.13, land: { x: -0.3, z: 11.42 } },
+      yaw: Math.PI / 2 + 0.13, land: { x: -0.3, z: 11.42 }, berthRadius: 2.1 },
     { id: 'pier-dock', title: '栈桥泊位', note: '绿船可在此靠泊。', x: -4.55, z: -5.15,
-      yaw: Math.PI / 2, land: { x: -4.55, z: -1.70 } },
+      yaw: Math.PI / 2, land: { x: -4.55, z: -1.70 }, berthRadius: 2.1 },
+    // 东堤是 11.6 米长的石堤，泊位只有一个点，所以靠岸半径必须放得比其它码头大，
+    // 否则沿堤停船时永远够不到 2.1 米的范围。
     { id: 'east-dock', title: '东堤码头', note: '南湾东侧的石堤，可在此靠岸与上下船。',
-      x: 16, z: 14.55, yaw: Math.PI / 2 - 0.06, land: { x: 16, z: 17.9 } },
+      x: 16, z: 15.35, yaw: Math.PI / 2 - 0.06, land: { x: 16, z: 17.9 }, berthRadius: 5.6 },
   ],
   boardLabel: '上船',
   dockLabel: '下船',

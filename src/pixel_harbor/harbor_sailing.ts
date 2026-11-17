@@ -110,7 +110,7 @@ export function createHarborSailing(boat: Group, player: HarborPlayer, getIce = 
     vessel,
     nearbyDock() {
       const dock = nearestDock(vessel)
-      if (distance(vessel, dock) > SAILING.berthRadius) return null
+      if (distance(vessel, dock) > dock.berthRadius) return null
       if (!player.sailing && distance(player, dock.land) > SAILING.boardingRadius) return null
       return dock
     },

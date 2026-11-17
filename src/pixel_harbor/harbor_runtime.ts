@@ -271,7 +271,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     if(activity.mode==='lookout')return scopeHotspot(player)
     if(activity.mode==='drive'){
       const dock=sailing.nearbyDock()
-      return dock ? { kind:'dock',id:dock.id,label:SAILING.dockPrompt,x:dock.x,z:dock.z,radius:SAILING.berthRadius } satisfies Hotspot : null
+      return dock ? { kind:'dock',id:dock.id,label:SAILING.dockPrompt,x:dock.x,z:dock.z,radius:dock.berthRadius } satisfies Hotspot : null
     }
     if(activity.mode)return null
     const nearby = resolveInteraction(player, animals, exhibits)
