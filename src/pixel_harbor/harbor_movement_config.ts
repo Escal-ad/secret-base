@@ -28,6 +28,9 @@ export const ORBIT = {
   pitch: 0.18,
   minPitch: -0.40,
   maxPitch: 0.72,
+  // 第一人称放开俯仰：负值抬头看天，正值低头。第三人称保持原范围。
+  firstMinPitch: -1.50,
+  firstMaxPitch: 0.90,
   verticalLookSensitivity: 0.004,
   floorClearance: 0.28,
   aimTime: 0.55,

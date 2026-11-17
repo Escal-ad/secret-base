@@ -397,6 +397,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     },
     focusPlace(id?: string) { return activity.focusAt(places.find(place => place.hotspot.id === id)) },
     updateFirst(step:number, settings:Settings, reduced:boolean) {
+      orbit.setFirstPerson(settings.view === 'first')
       first.update(player,orbit.angles,{enabled:settings.view==='first' && activity.mode!=='sunset' && !scope.active,
         step,instant:reduced,bob:settings.bob && !reduced && !flight.active})
       return { blend:first.blend,yaw:first.heading }

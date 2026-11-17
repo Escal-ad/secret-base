@@ -68,6 +68,7 @@ export function createOrbitCamera(camera: T.PerspectiveCamera, obstacles: readon
   const orbit = { ...target, target: null as CameraAim | null }
   let lookout = false
   let flying = false
+  let firstPerson = false
   return {
     update(player: HarborPlayer, seconds: number, immediate = false) {
       const turn = immediate ? 1 : dampingFactor(seconds, ORBIT.orbitTime)
@@ -85,7 +86,8 @@ export function createOrbitCamera(camera: T.PerspectiveCamera, obstacles: readon
       orbit.target = null
       target.yaw = (target.yaw - dx * ORBIT.lookSensitivity) % FULL_TURN
       target.pitch = T.MathUtils.clamp(target.pitch + dy * ORBIT.verticalLookSensitivity,
-        lookout ? LOOKOUT.minPitch : ORBIT.minPitch, lookout ? LOOKOUT.maxPitch : ORBIT.maxPitch)
+        lookout ? LOOKOUT.minPitch : firstPerson ? ORBIT.firstMinPitch : ORBIT.minPitch,
+        lookout ? LOOKOUT.maxPitch : firstPerson ? ORBIT.firstMaxPitch : ORBIT.maxPitch)
     },
     zoom(direction: number) {
       target.distance = T.MathUtils.clamp(target.distance + direction * ORBIT.distancePerWheelStep,
@@ -98,6 +100,11 @@ export function createOrbitCamera(camera: T.PerspectiveCamera, obstacles: readon
     },
     setSailing(sailing: boolean) { target.distance = sailing ? ORBIT.vesselDistance : ORBIT.distance },
     setFlight(active: boolean) { flying = active },
+    setFirstPerson(next: boolean) {
+      if (firstPerson === next) return
+      firstPerson = next
+      if (!next) target.pitch = T.MathUtils.clamp(target.pitch, ORBIT.minPitch, ORBIT.maxPitch)
+    },
     setLookout(next: boolean) {
       lookout = next
       orbit.target = null
