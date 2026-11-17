@@ -26,8 +26,8 @@ export const ORBIT = {
   minDistance: 2.05,
   maxDistance: 7.3,
   pitch: 0.18,
-  minPitch: -0.40,
-  maxPitch: 0.72,
+  minPitch: -1.45,
+  maxPitch: 1.10,
   // 第一人称放开俯仰：负值抬头看天，正值低头。第三人称保持原范围。
   firstMinPitch: -1.50,
   firstMaxPitch: 0.90,
