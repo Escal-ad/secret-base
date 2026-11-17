@@ -8,11 +8,12 @@ import type { createFlightSpace, FlightPoint, FlightPosition } from './harbor-fl
 
 type FlightSpace = ReturnType<typeof createFlightSpace>
 export type FlightInput = FlightPosition & { vertical: number; sprint: boolean }
-type Hooks = { change: (active: boolean) => void; notice: (text: string) => void; land: (point: FlightPosition) => boolean; recover: () => void }
+type Hooks = { change: (active: boolean) => void; notice: (text: string) => void; land: (point: FlightPoint) => boolean; recover: () => void }
 type Phase = 'ground' | 'launch' | 'air' | 'land'
 const IDLE = { x: 0, y: 0, z: 0 }
 const BANK_RESPONSE = 0.13
 const LAND_EPSILON = 0.04
+const ROOF_MARGIN = 0.4
 const EDGE_SPEED_REDUCTION = 0.88
 
 function flightTarget(input: FlightInput, yaw: number, edge: number) {
@@ -100,8 +101,12 @@ export function createFlightMotion(player: HarborPlayer, space: FlightSpace, hoo
         clearance: phase === 'air' && !descending && !regainingClearance, committedLanding: phase === 'land' })
     }
     if (phase === 'launch' && point.y >= minimumFlightHeight(point)) phase = 'air'
-    if (typeof floor === 'number' && descending && point.y < floor + LAND_EPSILON && hooks.land(point)) {
+    // Land on the computed surface height (roof or terrain), not the current altitude,
+    // so a slight overshoot during descent cannot place the player inside a building.
+    if (typeof floor === 'number' && descending && point.y < floor + LAND_EPSILON && hooks.land({ ...point, y: floor })) {
+      const onRoof = floor > flightFloor(point) + ROOF_MARGIN
       reset()
+      if (onRoof) hooks.notice(FLIGHT.ui.roof)
       return
     }
     syncPlayer(step, start)
@@ -137,7 +142,7 @@ export function createFlightMotion(player: HarborPlayer, space: FlightSpace, hoo
       if (phase === 'ground' || phase === 'land') return
       if (typeof space.landing(point) === 'number') phase = 'land'
       else {
-        if (!hooks.land(takeoff)) hooks.recover()
+        if (!hooks.land({ ...takeoff, y: DECK + groundElevation(takeoff.x, takeoff.z) })) hooks.recover()
         reset()
         hooks.notice(FLIGHT.ui.recovered)
       }

@@ -3,7 +3,7 @@ import { canWalkAt, findRespawnPoint, findSupportHeight, SPAWN } from './harbor_
 import type { WorldObstacle } from './harbor_layout'
 import { JUMP, MOVEMENT } from './harbor_movement_config'
 import { LOOKOUT } from './harbor_exploration_config'
-import { groundElevation } from './harbor_terrain'
+import { DECK, groundElevation } from './harbor_terrain'
 
 const COLLISION_SEARCH_STEPS = 8
 type PlanarVector = { x: number; z: number }
@@ -63,7 +63,9 @@ function createVerticalMotion(player: HarborPlayer, obstacles: readonly WorldObs
   let velocity = 0
   return {
     jump() {
-      if (player.airborne || player.height > JUMP.landingTolerance || player.sailing || player.lookout || player.sitting) return
+      if (player.airborne || player.sailing || player.lookout || player.sitting) return
+      const support = findSupportHeight(player.x, player.z, { obstacles, height: player.height })
+      if (player.height > support + JUMP.landingTolerance) return
       velocity = JUMP.lift
       player.jumpAge = 0
       player.airborne = true
@@ -122,15 +124,19 @@ export function createPlayerMotion(obstacles: readonly WorldObstacle[]) {
     }
   }
 
-  function positionAt(point: PlanarVector) {
-    Object.assign(player, point, { elevation: groundElevation(point.x, point.z), lookout: false, sitting: false })
+  function positionAt(point: PlanarVector, height = 0) {
     vertical.reset()
+    Object.assign(player, point, {
+      elevation: groundElevation(point.x, point.z), lookout: false, sitting: false, height,
+    })
   }
   const relocate = {
     jump: vertical.jump,
-    teleport(point: PlanarVector) {
-      if (!canWalkAt(point.x, point.z, { obstacles, height: 0 })) return false
-      positionAt(point)
+    teleport(point: PlanarVector, absoluteY?: number) {
+      const height = absoluteY === undefined ? 0
+        : Math.max(0, absoluteY - DECK - groundElevation(point.x, point.z))
+      if (!canWalkAt(point.x, point.z, { obstacles, height })) return false
+      positionAt(point, height)
       return true
     },
     respawn() {

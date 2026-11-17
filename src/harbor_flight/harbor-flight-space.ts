@@ -1,5 +1,5 @@
 import { MAP } from '../harbor_expansion/harbor-map-config'
-import { canWalkAt, WALKABLE } from '../pixel_harbor/harbor_layout'
+import { canWalkAt, findSupportHeight, WALKABLE } from '../pixel_harbor/harbor_layout'
 import type { WorldObstacle } from '../pixel_harbor/harbor_layout'
 import { MOVEMENT } from '../pixel_harbor/harbor_movement_config'
 import type { CameraObstacle } from '../pixel_harbor/harbor_orbit_camera'
@@ -45,8 +45,10 @@ export function createFlightSpace(walking: readonly WorldObstacle[], solids: rea
     landing({ x, z }: FlightPosition) {
       if (!canWalkAt(x, z, { height: 0, obstacles: [] })) return 'water'
       const y = flightFloor({ x, z })
-      if (!canWalkAt(x, z, { height: 0, obstacles: walking }) || blocked({ x, y, z })) return 'blocked'
-      return y
+      if (canWalkAt(x, z, { height: 0, obstacles: walking }) && !blocked({ x, y, z })) return y
+      // Over a structure: land on its roof surface instead of refusing the landing.
+      const roof = findSupportHeight(x, z, { obstacles: walking, height: Number.POSITIVE_INFINITY })
+      return roof > 0 ? y + roof : 'blocked'
     },
     clear({ x, y, z }: FlightPoint, clearance: boolean) {
       if (x < EDGE.left || x > EDGE.right || z < EDGE.near || z > EDGE.far || y > FLIGHT.maximumAltitude) return false

@@ -199,13 +199,22 @@ function installExhibitPicking(exhibits: readonly Exhibit[], camera: T.Perspecti
   }
 }
 
+// Roof tops of landable structures. The lighthouse is excluded on purpose:
+// its platform belongs to the lookout activity, which teleports the player.
+const LANDABLE_ROOFS = HARBOR_STRUCTURES.slice(1)
+
+function roofTop(footprint: Footprint) {
+  return LANDABLE_ROOFS.find(item => item.footprint.every((value, index) => value === footprint[index]))?.height
+}
+
 function walkingObstacles(propObstacles: readonly Footprint[]): WorldObstacle[] {
   const { x, z } = CAPTAIN.position
   const radius = CAPTAIN_COLLISION_RADIUS
   const captain: Footprint = [x - radius, x + radius, z - radius, z + radius]
   return [...WORLD_OBSTACLES, EVAL_STATION_OBSTACLE.footprint, ...FOREST_OBSTACLES, ...NEW_LANDMARK_OBSTACLES,
     captain, ...propObstacles].map(footprint => ({
-    footprint, height: JUMP.vaultable.find(item => item.footprint.every((value, index) => value === footprint[index]))?.height,
+    footprint, height: JUMP.vaultable.find(item => item.footprint.every((value, index) => value === footprint[index]))?.height
+      ?? roofTop(footprint),
   }))
 }
 
@@ -239,7 +248,8 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
   const { player } = motion
   const flight = createFlightMotion(player, createFlightSpace(obstacles, [
     ...cameraObstacles, ...world.flightVolumes, ...FOREST_FLIGHT_VOLUMES, ...HILL_FLIGHT_VOLUMES,
-  ]), { change: options.onFlight, notice: options.onFlightNotice, land: motion.teleport, recover: motion.respawn })
+  ]), { change: options.onFlight, notice: options.onFlightNotice,
+    land: (point: { x: number; y: number; z: number }) => motion.teleport(point, point.y), recover: motion.respawn })
   const sailing = createHarborSailing(vessel, player, () => extension.weather.frame.ice)
   const orbit = createOrbitCamera(camera, cameraObstacles)
   const first = createFirstCamera(camera)
