@@ -1,5 +1,8 @@
 export const RESIDENTS = {
   radius: 1.55, activityRadius: 13, speed: 0.39, cadence: 0.30, greet: '打招呼', placeholder: '待填写',
+  // 作息：夜里或雨大时走回最近的屋子躲着，白天再出来。
+  homes: [[-3, 17.5], [6, 19.2], [-8, -21], [-24.7, -3]] as const,
+  shelterNight: 0.60, shelterRain: 0.40, shelterDistance: 0.75,
   // TODO(reason): 待用户填写姓名、职业和招呼台词。
   people: [
     // build 是体型缩放；headwear 区分渔帽/头巾；apron 是围裙颜色，留空则没有。

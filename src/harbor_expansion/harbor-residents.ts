@@ -10,6 +10,12 @@ import type { ModelKit } from '../pixel_harbor/harbor_models'
 import { makeUmbrella } from './harbor-umbrella'
 import { dampAngle, dampingFactor } from '../pixel_harbor/harbor_damping'
 
+function nearestHome(x: number, z: number) {
+  return RESIDENTS.homes.reduce((best, home) =>
+    Math.hypot(x - home[0], z - home[1]) < Math.hypot(x - best[0], z - best[1]) ? home : best,
+  RESIDENTS.homes[0])
+}
+
 function makeResident(kit: ModelKit, entry: typeof RESIDENTS.people[number], index: number) {
   const [x, z] = entry.spot
   const extra = entry as { build?: readonly [number, number, number]; apron?: string }
@@ -24,7 +30,25 @@ function makeResident(kit: ModelKit, entry: typeof RESIDENTS.people[number], ind
   const pose: HarborPlayer = { x, z, facing: index, elevation: groundElevation(x,z), speed: 0, height: 0,
     landing: 0, jumpAge: 0, airborne: false, lookout: false, sitting: false, sailing: false, swimming: false }
   return { actor, pose, umbrella, spot: {x,z}, index, time: index * 3, accumulated: 0,
+    home: nearestHome(x, z), sheltering: false,
     title: entry.name || `村民 ${index + 1}`, note: [entry.job, entry.line].filter(Boolean).join(' · ') || RESIDENTS.placeholder }
+}
+
+function walkTo(person: ReturnType<typeof makeResident>, targetX: number, targetZ: number, nav: { step: number; obstacles: readonly WorldObstacle[] }) {
+  const { pose } = person
+  const dx = targetX - pose.x
+  const dz = targetZ - pose.z
+  const distance = Math.hypot(dx, dz)
+  const pace = RESIDENTS.speed * nav.step
+  const heading = Math.atan2(dx, dz)
+  const x = pose.x + Math.sin(heading) * Math.min(pace, distance)
+  const z = pose.z + Math.cos(heading) * Math.min(pace, distance)
+  pose.speed = 0
+  if (canWalkAt(x, z, { obstacles: nav.obstacles, height: 0, radius: 0.23 })) {
+    pose.speed = RESIDENTS.speed
+    Object.assign(pose, { x, z, elevation: groundElevation(x, z),
+      facing: dampAngle(pose.facing, heading, dampingFactor(nav.step, 0.28)) })
+  }
 }
 
 function walkResident(person: ReturnType<typeof makeResident>, player: HarborPlayer, nav: { step: number; obstacles: readonly WorldObstacle[] }) {
@@ -53,10 +77,29 @@ export function addHarborResidents(scene: T.Scene, kit: ModelKit, obstacles: rea
   residents.forEach(({ actor, pose }) => { actor.update(pose,0,true); scene.add(actor.avatar) })
   return {
     update(player: HarborPlayer, step: number, options: { night: number; rain: number; reduced: boolean; limit: number }) {
+      const shelter = options.night > RESIDENTS.shelterNight || options.rain > RESIDENTS.shelterRain
       for (const person of residents) {
         const { index, pose, actor } = person
-        actor.avatar.visible = index < options.limit && (options.night < 0.75 || index % 2 === 1)
-        if (!actor.avatar.visible) continue
+        if (shelter) {
+          // 收工回家：走到最近的屋子门口就进屋（隐藏），白天再出来。
+          const distance = Math.hypot(person.home[0] - pose.x, person.home[1] - pose.z)
+          if (distance < RESIDENTS.shelterDistance) {
+            actor.avatar.visible = false
+            person.sheltering = true
+            continue
+          }
+          actor.avatar.visible = index < options.limit
+          person.accumulated += step
+          if (person.accumulated < RESIDENTS.cadence) continue
+          const walk = person.accumulated; person.accumulated = 0
+          pose.sitting = false
+          walkTo(person, person.home[0], person.home[1], { step: walk, obstacles })
+          person.umbrella.visible = options.rain > 0.32
+          actor.update(pose, walk, options.reduced)
+          continue
+        }
+        person.sheltering = false
+        actor.avatar.visible = index < options.limit
         const close = Math.hypot(player.x-pose.x,player.z-pose.z) < RESIDENTS.activityRadius
         person.accumulated += step
         if (!close && person.accumulated < RESIDENTS.cadence) continue
