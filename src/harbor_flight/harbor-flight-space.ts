@@ -1,6 +1,7 @@
 import { MAP } from '../harbor_expansion/harbor-map-config'
 import { canWalkAt, findSupportHeight, WALKABLE } from '../pixel_harbor/harbor_layout'
 import type { WorldObstacle } from '../pixel_harbor/harbor_layout'
+import { LOOKOUT } from '../pixel_harbor/harbor_exploration_config'
 import { MOVEMENT, SWIM } from '../pixel_harbor/harbor_movement_config'
 import type { CameraObstacle } from '../pixel_harbor/harbor_orbit_camera'
 import { cameraFloor, DECK } from '../pixel_harbor/harbor_terrain'
@@ -47,6 +48,9 @@ export function createFlightSpace(walking: readonly WorldObstacle[], solids: rea
       if (!canWalkAt(x, z, { height: 0, obstacles: [] })) return SWIM.waterLevel
       const y = flightFloor({ x, z })
       if (canWalkAt(x, z, { height: 0, obstacles: walking }) && !blocked({ x, y, z })) return y
+      // 灯塔瞭望平台：环形平台在塔身之外还有一段挑檐，绕过塔基的实心判定。
+      const ring = Math.hypot(x - LOOKOUT.center.x, z - LOOKOUT.center.z)
+      if (ring >= LOOKOUT.lanternRadius && ring <= LOOKOUT.outerRadius) return DECK + LOOKOUT.platformOffset
       // Over a structure: land on its roof surface instead of refusing the landing.
       const roof = findSupportHeight(x, z, { obstacles: walking, height: Number.POSITIVE_INFINITY })
       return roof > 0 ? y + roof : 'blocked'

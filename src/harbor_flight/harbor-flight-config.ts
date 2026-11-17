@@ -17,7 +17,7 @@ export const FLIGHT = {
     noticeMs: 3600,
     enable: '飞行', launch: '飞行', land: '降落', climb: '上升', descend: '下降', boost: '加速',
     water: '下面是大海，先飞回岸边', blocked: '下方没有安全落点，先飞到空旷地面',
-    roof: '落在屋顶上', swim: '落入水中，开始游泳', shore: '上岸',
+    roof: '落在屋顶上', swim: '落入水中，开始游泳', shore: '上岸', platform: '落在灯塔平台上',
     recovered: '飞行已关闭，已返回安全地点。',
     keys: 'F 起飞或降落 · WASD 移动 · 空格上升 · Ctrl / C 下降 · Shift 加速',
   },

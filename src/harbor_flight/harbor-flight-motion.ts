@@ -2,6 +2,7 @@ import { dampAngle, dampingFactor, RESPONSE_FACTOR } from '../pixel_harbor/harbo
 import { MOVEMENT } from '../pixel_harbor/harbor_movement_config'
 import type { HarborPlayer } from '../pixel_harbor/harbor_player_motion'
 import { DECK, groundElevation } from '../pixel_harbor/harbor_terrain'
+import { LOOKOUT } from '../pixel_harbor/harbor_exploration_config'
 import { FLIGHT } from './harbor-flight-config'
 import { flightEdge, flightFloor, minimumFlightHeight } from './harbor-flight-space'
 import type { createFlightSpace, FlightPoint, FlightPosition } from './harbor-flight-space'
@@ -104,9 +105,12 @@ export function createFlightMotion(player: HarborPlayer, space: FlightSpace, hoo
     // Land on the computed surface height (roof or terrain), not the current altitude,
     // so a slight overshoot during descent cannot place the player inside a building.
     if (typeof floor === 'number' && descending && point.y < floor + LAND_EPSILON && hooks.land({ ...point, y: floor })) {
+      const ring = Math.hypot(point.x - LOOKOUT.center.x, point.z - LOOKOUT.center.z)
+      const onPlatform = ring >= LOOKOUT.lanternRadius && ring <= LOOKOUT.outerRadius
       const onRoof = floor > flightFloor(point) + ROOF_MARGIN
       reset()
-      if (onRoof) hooks.notice(FLIGHT.ui.roof)
+      if (onPlatform) hooks.notice(FLIGHT.ui.platform)
+      else if (onRoof) hooks.notice(FLIGHT.ui.roof)
       return
     }
     syncPlayer(step, start)

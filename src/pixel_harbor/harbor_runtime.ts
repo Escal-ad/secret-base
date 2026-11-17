@@ -30,7 +30,7 @@ import { CAPTAIN } from './harbor_captain_config'
 import { addHarborForest, FOREST_FLIGHT_VOLUMES, FOREST_OBSTACLES } from './harbor_forest'
 import { createHarborGlow } from './harbor_glow'
 import { addExhibits } from './harbor_exhibits'
-import { VILLAGE } from './harbor_exploration_config'
+import { LOOKOUT, VILLAGE } from './harbor_exploration_config'
 import { createHotspotMarker } from './harbor_hotspot_marker'
 import type { HintPosition } from './harbor_hotspot_marker'
 import { artHotspot, createHotspotTracker, findHarborHotspot, isInsideHotspot, listHarborPlaces } from './harbor_hotspots'
@@ -235,6 +235,12 @@ type NavigationWorld = {
   flightVolumes: ReturnType<typeof addWorld>['flightVolumes']
 }
 
+// 落在灯塔瞭望平台上：环形平台半径与 LOOKOUT 一致。
+function isOverLookoutRing(point: { x: number; z: number }) {
+  const ring = Math.hypot(point.x - LOOKOUT.center.x, point.z - LOOKOUT.center.z)
+  return ring >= LOOKOUT.lanternRadius && ring <= LOOKOUT.outerRadius
+}
+
 // Navigation input shares one lock with panels and activities, including travel during a fade.
 function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera, world: NavigationWorld) {
   const { exhibits, canvas, propObstacles, vessel, animals, obstacles, extension } = world
@@ -246,13 +252,17 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     ...propObstacles.map(footprint => ({ footprint, height: EXHIBIT_CAMERA_HEIGHT }))]
   const motion = createPlayerMotion(obstacles)
   const { player } = motion
+  // 由活动模块在创建后接管：降落平台等同于「登塔」，这样下塔方式与原来一致。
+  let landOnPlatform: () => boolean = () => false
   const flight = createFlightMotion(player, createFlightSpace(obstacles, [
     ...cameraObstacles, ...world.flightVolumes, ...FOREST_FLIGHT_VOLUMES, ...HILL_FLIGHT_VOLUMES,
   ]), { change: options.onFlight, notice: options.onFlightNotice,
-    land: (point: { x: number; y: number; z: number }) =>
-      canWalkAt(point.x, point.z, { obstacles: [], height: 0 })
+    land: (point: { x: number; y: number; z: number }) => {
+      if (isOverLookoutRing(point)) return landOnPlatform()
+      return canWalkAt(point.x, point.z, { obstacles: [], height: 0 })
         ? motion.teleport(point, point.y)
-        : motion.swim(point),
+        : motion.swim(point)
+    },
     recover: motion.respawn })
   const sailing = createHarborSailing(vessel, player, () => extension.weather.frame.ice)
   const orbit = createOrbitCamera(camera, cameraObstacles)
@@ -260,6 +270,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
   const places = listHarborPlaces(exhibits)
   const activity = createHarborActivities({ motion, orbit, sailing,
     onMode: options.onMode, onRequest: options.onActivityRequest, onCue: options.onCue, onNotice: options.onQuality })
+  landOnPlatform = () => activity.act('lookout', false)
   let panelOpen = false
   let menuOpen = false
   let transitionLocked = false
