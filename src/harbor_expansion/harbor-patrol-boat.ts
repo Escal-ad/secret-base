@@ -9,7 +9,7 @@ export const PATROL = {
   // 海上巡逻路线（都在水域内，避开了栈桥、登陆点与东堤）
   route: [[16, -16], [26, -10], [24, 2], [14, -6]] as const,
   berth: { x: 13.2, z: -6.4, yaw: Math.PI / 2 },
-  speed: 1.55,
+  speed: 1.8,
   arrive: 0.9,
   berthArrive: 0.5,
   nightFrom: 0.55,
