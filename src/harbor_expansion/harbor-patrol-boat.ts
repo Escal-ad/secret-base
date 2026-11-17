@@ -28,17 +28,21 @@ export function addPatrolBoat(scene: T.Scene, kit: ModelKit) {
   boat.add(kit.beam([[-1.2, 1.05, -0.55], [1.3, 1.35, -0.55]], 0.05, ['#7d6a55']))
   scene.add(boat)
 
-  // 渔民：戴渔帽、系围裙，站在船头。
+  // 渔民：用船夫那套配色，站在船舷边钓鱼。
   const fisherman = createHarborAvatar(kit, {
-    hair: '#4a3b32', skin: '#c89773', shirt: '#6d7f8a', trousers: '#4b5350',
-    hat: false, headwear: 'cap', faceVariant: 1,
+    hair: '#4a3b32', skin: '#c89773', shirt: '#6d7f8a', trousers: '#4b5350', hat: false, headwear: 'cap',
   })
   fisherman.avatar.scale.setScalar(0.62)
-  fisherman.avatar.position.set(-0.15, 0.92, 0.35)
   boat.add(fisherman.avatar)
+  // 鱼竿：一根斜向海面的竿，加一条线
+  boat.add(kit.beam([[-0.05, 1.42, 0.62], [0.34, 2.34, 1.52]], 0.032, ['#8a6a4a']))
+  boat.add(kit.beam([[0.34, 2.34, 1.52], [0.30, 0.95, 2.0]], 0.010, ['#c8d2d0']))
+  const FISHER_POS = { x: -0.15, y: 0.86, z: 0.32 }
 
-  // 渔民是船的子物体，不能调用 avatar.update()（它按世界坐标定位）。
-  const pose = { x: PATROL.route[0][0], z: PATROL.route[0][1] }
+  // 渔民是船的子物体：用本地原点驱动姿态动画，之后再把位置写回船内坐标。
+  const pose = { x: 0, z: 0, facing: 0, speed: 0, height: 0,
+    elevation: 0, airborne: false, jumpAge: 0, landing: 0,
+    sailing: false, sitting: false, lookout: false, swimming: false }
   let waypoint = 1
   let yaw = 0
   let bobTime = 0
@@ -70,5 +74,9 @@ export function addPatrolBoat(scene: T.Scene, kit: ModelKit) {
     // makeBoat 的船头朝 -X，所以整体再转 -90°。
     boat.rotation.y = yaw - Math.PI / 2
     boat.rotation.z = reduced ? 0 : Math.sin(bobTime * 0.9) * 0.02
+    // 举竿垂钓的姿势
+    fisherman.setFishingArm(-1.18)
+    fisherman.update(pose, step, reduced)
+    fisherman.avatar.position.set(FISHER_POS.x, FISHER_POS.y, FISHER_POS.z)
   }
 }

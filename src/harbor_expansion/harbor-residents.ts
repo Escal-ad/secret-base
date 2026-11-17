@@ -18,19 +18,25 @@ function nearestHome(x: number, z: number) {
 
 function makeResident(kit: ModelKit, entry: typeof RESIDENTS.people[number], index: number) {
   const [x, z] = entry.spot
-  const extra = entry as { build?: readonly [number, number, number]; apron?: string }
+  const extra = entry as { build?: readonly [number, number, number]; apron?: string;
+    fishing?: boolean; facing?: number }
   const actor = createHarborAvatar(kit, { ...entry, traveler: false, faceVariant: index })
   // 体型：不同村民高矮胖瘦不同，靠缩放区分轮廓。
   if (extra.build) actor.avatar.scale.set(extra.build[0], extra.build[1], extra.build[2])
   // 围裙：贴在身前的一小块布，让渔民和普通人一眼分得开。
   if (extra.apron) actor.detailAnchor.add(kit.box([0, 0.55, 0.155], [0.30, 0.42, 0.04], [extra.apron]))
+  // 钓鱼：右臂举竿 + 一根鱼竿模型
+  if (extra.fishing) {
+    actor.setFishingArm(-1.18)
+    actor.detailAnchor.add(kit.beam([[0.22, 0.95, 0.2], [0.5, 1.72, 0.98]], 0.028, ['#8a6a4a']))
+  }
   const umbrella = makeUmbrella(kit)
   umbrella.position.set(0.25, 1.02, 0.13)
   actor.avatar.add(umbrella)
-  const pose: HarborPlayer = { x, z, facing: index, elevation: groundElevation(x,z), speed: 0, height: 0,
+  const pose: HarborPlayer = { x, z, facing: extra.facing ?? index, elevation: groundElevation(x,z), speed: 0, height: 0,
     landing: 0, jumpAge: 0, airborne: false, lookout: false, sitting: false, sailing: false, swimming: false }
   return { actor, pose, umbrella, spot: {x,z}, index, time: index * 3, accumulated: 0,
-    home: nearestHome(x, z), sheltering: false,
+    home: nearestHome(x, z), sheltering: false, fishing: Boolean(extra.fishing),
     title: entry.name || `村民 ${index + 1}`, note: [entry.job, entry.line].filter(Boolean).join(' · ') || RESIDENTS.placeholder }
 }
 
@@ -81,6 +87,7 @@ export function addHarborResidents(scene: T.Scene, kit: ModelKit, obstacles: rea
       for (const person of residents) {
         const { index, pose, actor } = person
         if (shelter) {
+          if (person.fishing) { actor.avatar.visible = false; continue }
           // 收工回家：走到最近的屋子门口就进屋（隐藏），白天再出来。
           const distance = Math.hypot(person.home[0] - pose.x, person.home[1] - pose.z)
           if (distance < RESIDENTS.shelterDistance) {
@@ -105,9 +112,9 @@ export function addHarborResidents(scene: T.Scene, kit: ModelKit, obstacles: rea
         if (!close && person.accumulated < RESIDENTS.cadence) continue
         const elapsed = person.accumulated; person.accumulated = 0
         person.time += elapsed
-        pose.sitting = index % 3 === 0 && Math.sin(person.time * 0.22) < -0.28
+        pose.sitting = !person.fishing && index % 3 === 0 && Math.sin(person.time * 0.22) < -0.28
         pose.speed = 0
-        if (!pose.sitting && index % 3 !== 2) walkResident(person,player,{step:elapsed,obstacles})
+        if (!person.fishing && !pose.sitting && index % 3 !== 2) walkResident(person,player,{step:elapsed,obstacles})
         person.umbrella.visible = options.rain > 0.32
         actor.update(pose,elapsed,options.reduced || !close)
       }
