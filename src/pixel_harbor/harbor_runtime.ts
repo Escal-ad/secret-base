@@ -343,7 +343,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     canLook: () => !fishing.active && !transitionLocked && !panelOpen && (activity.mode !== 'sunset' && activity.mode !=='tour'),
     canSteer: () => !transitionLocked && !menuOpen && activity.mode==='drive',
     sprintEnabled: ()=>!menuOpen,
-    lockPointer: () => options.settings().view==='first' && options.settings().lock && !fishing.active && !panelOpen && !scope.active,
+    lockPointer: () => options.settings().view==='first' && !fishing.active && !panelOpen && !scope.active,
     specialLook: { active:()=>scope.active,look:scope.look,zoom:scope.zoom },
     onInteract:interact,
     onPick(pointer) {
