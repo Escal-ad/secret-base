@@ -40,6 +40,7 @@
 | `npm run build` | 执行 `tsc -b && vite build`，先类型检查，再构建。 |
 | `npm run lint` | 用 `oxlint` 检查源码。 |
 | `npm run preview` | 用 Vite 预览已生成的生产构建，不作为生产服务。 |
+| `.\publish.cmd` | 一键发布：构建后把 `dist/` 内容推到 `gh-pages` 分支。逻辑在 `publish.ps1`；本机执行策略为 Restricted，必须经 `.cmd` 调用，不要直接跑 `.ps1`。发布流程详见 `docs/DEPLOY.md`。 |
 
 ## 代码规范
 
