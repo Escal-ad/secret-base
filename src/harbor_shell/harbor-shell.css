@@ -1,0 +1,13 @@
+.entry-loading{position:fixed;inset:0;display:grid;place-content:center;justify-items:center;z-index:8;background:#283f48;color:#fff0da;text-align:center}
+.entry-loading progress{width:min(320px,75vw);height:12px;accent-color:#deb780}
+.harbor-menu-tabs{display:flex;overflow:auto;gap:5px;padding:0 0 7px;white-space:nowrap}
+.harbor-menu-tabs button{min-height:44px;padding:4px 9px}
+.harbor-menu-tabs [aria-selected=true]{box-shadow:inset 0 0 0 2px #af8653}
+.settings-form{display:grid;gap:10px}
+.settings-form fieldset{display:grid;gap:8px;border:1px solid currentColor;min-width:0}
+.settings-form label{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.settings-form select{max-width:60%;min-height:36px;color:inherit;background:var(--scene-paper,#fbebce)}
+.settings-volume{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.settings-volume input[type=range]{width:min(120px,50%)}
+.reader-enter{margin-block:5px 15px}
+.scene-menu-controls{display:flex;flex-wrap:wrap;gap:6px;margin-block:12px}

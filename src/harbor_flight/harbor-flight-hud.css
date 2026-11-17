@@ -1,0 +1,21 @@
+.harbor-flight-hud { display: none; }
+@media (any-pointer: coarse), (max-width: 640px) {
+  .harbor-flight-hud {
+    position: absolute;
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(61px, calc(env(safe-area-inset-bottom) + 52px));
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    gap: 6px;
+  }
+  .harbor-flight-hud[data-active=true] { bottom: max(12px, env(safe-area-inset-bottom)); }
+  .harbor-flight-hud button {
+    grid-column: 2;
+    min-height: 44px;
+    min-width: 57px;
+    padding: 4px 8px;
+    touch-action: none;
+  }
+  .harbor-flight-hud[data-active=true] button { grid-column: auto; }
+  .pixel-harbor[data-flight=true] .harbor-notice { bottom: max(116px, calc(env(safe-area-inset-bottom) + 104px)); }
+}

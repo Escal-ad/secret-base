@@ -1,0 +1,25 @@
+.harbor-pastime-panel button { min-height: 44px; padding-inline: 10px; }
+.harbor-pastime-panel h3 { margin: 0; }
+.harbor-pastime-panel section { margin-top: 20px; }
+.harbor-pastime-panel :is(.harbor-pastime-actions, .harbor-wish-form) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.harbor-wish-form :is(label, textarea) { flex: 0 0 100%; }
+.harbor-wish-form textarea {
+  box-sizing: border-box;
+  font: inherit;
+  resize: vertical;
+  color: var(--scene-ink);
+  background: var(--scene-paper);
+  border: 1px solid var(--scene-border);
+  padding: 8px;
+}
+.harbor-wish-form [type="submit"] { margin-inline-start: auto; }
+.harbor-pastime-list { list-style: none; padding: 0; margin-block: 10px; }
+.harbor-pastime-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-block: 5px; }
+.harbor-wish-text { overflow-wrap: anywhere; white-space: pre-wrap; }
+.harbor-catch-row { display: flex; align-items: center; gap: 12px; }
+.harbor-pastime-list .harbor-catch-row { justify-content: flex-start; }
+.harbor-catch-icon { width: 46px; fill: currentColor; flex: 0 0 auto; }
+.harbor-fishing-hud[data-fishing-phase="bite"] { outline: 2px solid #eebf63; }
+.harbor-fishing-hud .activity-buttons button { min-height: 44px; }
+.harbor-fishing-hud { z-index: 1; }
+.harbor-pastime-panel .harbor-catch-row + p + button { margin-block: 8px; }

@@ -1,0 +1,64 @@
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { HarborReading } from './pixel_harbor/harbor_reading'
+import { HarborSiteHeader } from './pixel_harbor/harbor_site_header'
+import { ProfileDiagnostics } from './pixel_harbor/harbor-profile-content'
+import { HarborEntry, HarborLoading } from './harbor_shell/harbor-entry'
+import { createHarborAudio } from './harbor_shell/harbor-audio'
+import { useHarborSettings } from './harbor_shell/harbor-settings'
+import './pixel_harbor/harbor_site.css'
+import './harbor_shell/harbor-shell.css'
+
+const PixelHarbor = lazy(async () => ({ default: (await import('./pixel_harbor/pixel_harbor')).PixelHarbor }))
+type Page = 'entry' | 'read' | 'scene'
+
+function startingPage(): Page {
+  const query = new URLSearchParams(location.search)
+  if (query.get('mode') === 'read') return 'read'
+  return import.meta.env.DEV && query.get('skip') === '1' ? 'scene' : 'entry'
+}
+
+export default function App() {
+  const [page, setPage] = useState(startingPage)
+  const [audio] = useState(createHarborAudio)
+  const settings = useHarborSettings()
+  const { values, warning, update } = settings
+  useEffect(() => {
+    if (page === 'entry') audio.prepare()
+    if (page !== 'scene') audio.sync({ settings: values, scene: { night: false, weather: 'clear' } })
+  }, [audio, page, values])
+  useEffect(() => {
+    document.addEventListener('visibilitychange', audio.visibility)
+    document.addEventListener('pointerup', audio.resumeOnGesture)
+    document.addEventListener('keydown', audio.resumeOnGesture)
+    return () => {
+      document.removeEventListener('visibilitychange',audio.visibility)
+      document.removeEventListener('pointerup',audio.resumeOnGesture)
+      document.removeEventListener('keydown',audio.resumeOnGesture)
+      audio.dispose()
+    }
+  }, [audio])
+  const switchPage = useCallback((next: Page) => {
+    const url = new URL(location.href)
+    if (next === 'read') url.searchParams.set('mode','read')
+    else url.searchParams.delete('mode')
+    url.hash=''
+    history.replaceState(history.state,'',url)
+    window.scrollTo(0,0)
+    setPage(next)
+  }, [])
+  const read = useCallback(() => switchPage('read'), [switchPage])
+  function enter() { void audio.unlock(); switchPage('scene') }
+  if (page === 'entry') return <>
+    {warning && <p className="site-warning" role="status">{warning}</p>}
+    <HarborEntry settings={values} onUpdate={update} onEnter={enter} onRead={read} />
+  </>
+  if (page === 'read') return <>
+    <HarborSiteHeader onToggle={enter} />
+    <ProfileDiagnostics />
+    {warning && <p className="site-warning" role="status">{warning}</p>}
+    <HarborReading />
+  </>
+  return <Suspense fallback={<HarborLoading progress={5} />}>
+    <PixelHarbor onRead={read} settings={values} updateSettings={update} audio={audio} warning={warning} />
+  </Suspense>
+}
