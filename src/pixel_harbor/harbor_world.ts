@@ -245,16 +245,7 @@ function addBoats(scene: T.Scene, kit: ModelKit) {
   return { boats: built, vessel }
 }
 
-// 塔底门廊：贴在灯塔门洞外侧（塔门在 z ≈ -20.37），正面朝南敞开，
-// 两侧薄墙挡风，顶上一块石板。门廊不进入灯塔基座的障碍范围，因此不动那座塔的碰撞体。
-const PORCH = { x: 6.7, z: -19.4, width: 2.0, depth: 1.3, wall: 0.14, height: 1.9, roof: 0.14 } as const
-const PORCH_FRONT = PORCH.z + PORCH.depth / 2
-
-export const TOWER_PORCH_WALLS: Footprint[] = [-1, 1].map(side => {
-  const centerX = PORCH.x + side * (PORCH.width / 2 - PORCH.wall / 2)
-  return [centerX - PORCH.wall / 2, centerX + PORCH.wall / 2,
-    PORCH.z - PORCH.depth / 2, PORCH_FRONT] as Footprint
-})
+// 塔底门廊已移除：灯塔门前恢复原来的空地。
 
 export const HARBOR_STRUCTURES = [
   { footprint: [5.15, 8.25, -23.1, -20.0], height: 10.4 },
@@ -266,7 +257,6 @@ export const HARBOR_STRUCTURES = [
 
 export const WORLD_OBSTACLES: Footprint[] = [
   ...HARBOR_STRUCTURES.map(structure => structure.footprint),
-  ...TOWER_PORCH_WALLS,
   ...TERRACE_HOUSES.filter(house => house.base === VILLAGE.upperY).map(house => house.footprint),
   ...TERRACE_TRUNKS,
   ...HILL_OBSTACLES,
@@ -304,20 +294,6 @@ function addEastDockFittings(group: T.Group, kit: ModelKit) {
   group.add(kit.box([16, DECK + 0.04, 16.34], [11.0, 0.12, 0.22], TIMBER))
 }
 
-function addTowerPorch(group: T.Group, kit: ModelKit) {
-  const stone: Paint = ['#9d9484', 'brick']
-  const lintel: Paint = ['#7b6a5c', 'wood']
-  const halfWall = PORCH.width / 2 - PORCH.wall / 2
-  group.add(kit.box([PORCH.x, DECK + 0.02, PORCH.z], [PORCH.width, 0.05, PORCH.depth], stone))
-  for (const side of [-1, 1]) {
-    group.add(kit.box([PORCH.x + side * halfWall, DECK + 0.05 + PORCH.height / 2, PORCH.z],
-      [PORCH.wall, PORCH.height, PORCH.depth], stone))
-  }
-  group.add(kit.box([PORCH.x, DECK + 0.05 + PORCH.height + PORCH.roof / 2, PORCH.z],
-    [PORCH.width + 0.2, PORCH.roof, PORCH.depth + 0.2], lintel))
-  group.add(kit.box([PORCH.x, DECK + 0.14, PORCH.z - PORCH.depth / 2 + 0.2], [0.9, 0.18, 0.34], stone))
-}
-
 export function addWorld(scene: T.Scene, kit = createModelKit()) {
   const staticWorld = new T.Group()
   addShore(staticWorld, kit)
@@ -333,7 +309,6 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
   tower.name = 'harbor-tower'
   tower.position.set(6.7, DECK, -21.55)
   staticWorld.add(tower)
-  addTowerPorch(staticWorld, kit)
   for (const [x, z, color] of [[17, -6, '#c97959'], [23, -12, '#d1ab63'], [14, 9, '#bf7154'], [30, -3, '#cfac62']] as const) {
     addBuoy(staticWorld, kit, [x, 0.18, z], color)
   }
