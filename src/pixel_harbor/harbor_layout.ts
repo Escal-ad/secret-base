@@ -26,7 +26,9 @@ export const SOUTH_QUAY: Footprint = [-18, 11, 11, 25]
 // 东堤：南湾东侧伸进水里的石砌平台，与 SOUTH_QUAY 在 x = 11 处接上。
 // 这块石板在 harbor_world 的 addShore 里已经建好，加进 WALKABLE 后水域网格会自动扣除。
 export const EAST_DOCK: Footprint = [10.4, 22, 16.1, 19.9]
-export const WALKABLE: readonly Footprint[] = [PIER, LANDING, WEST_BANK, HEADLAND, SOUTH_QUAY, EAST_DOCK,
+// 可落脚的外岛（对应 ISLANDS.positions 第 1 与第 4 项），飞到岛上能站稳。
+const ISLAND_GROUND: Footprint[] = [[36.6, 49.4, -22.4, -13.6], [46.9, 69.1, 39.7, 54.3]]
+export const WALKABLE: readonly Footprint[] = [PIER, LANDING, WEST_BANK, HEADLAND, SOUTH_QUAY, EAST_DOCK, ...ISLAND_GROUND,
   ...VILLAGE_PATHS, ...HILL.footprints]
 
 const RESPAWN_POINTS = [
