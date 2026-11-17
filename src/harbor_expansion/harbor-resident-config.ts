@@ -13,7 +13,7 @@ export const RESIDENTS = {
     { spot: [-16.5, 3.8], hair: '#5e4274', skin: '#dca67f', shirt: '#ab9a6a', trousers: '#605145', hat: false,
       build: [0.86, 0.88, 0.86], headwear: 'none', name: '', job: '', line: '' },
     // 这位是船夫造型的渔民：站在东堤北缘、面朝海钓鱼，不再四处走动。
-    { spot: [13.5, 16.75], facing: Math.PI, hair: '#655d57', skin: '#c89773', shirt: '#426d78', trousers: '#58483d', hat: false,
+    { spot: [13.5, 16.30], facing: Math.PI, hair: '#655d57', skin: '#c89773', shirt: '#426d78', trousers: '#58483d', hat: false,
       build: [1.0, 1.02, 1.0], headwear: 'straw', fishing: true, name: '', job: '', line: '' },
     { spot: [-16.3,16.1], hair: '#a57c52', skin: '#dfab83', shirt: '#a88292', trousers: '#4e6764', hat: false,
       build: [1.08, 1.0, 1.08], headwear: 'cap', apron: '#5f7f72', name: '', job: '', line: '' },
