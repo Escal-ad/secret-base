@@ -55,6 +55,16 @@ function addLookInput(canvas: HTMLCanvasElement, actions: {
     canvas.focus({ preventScroll: true })
     canvas.setPointerCapture(event.pointerId)
   }, { signal })
+  // 右键：在「鼠标直接看」和「拖动看」之间切换
+  canvas.addEventListener('contextmenu', event => event.preventDefault(), { signal })
+  canvas.addEventListener('pointerdown', event => {
+    if (event.button !== 2) return
+    event.preventDefault()
+    if (document.pointerLockElement === canvas) { document.exitPointerLock(); return }
+    if (!actions.lockPointer() || !canvas.requestPointerLock) return
+    const pending = canvas.requestPointerLock()
+    if (pending) void pending.catch(() => canvas.focus({ preventScroll: true }))
+  }, { signal })
   canvas.addEventListener('pointermove', event => {
     if (document.pointerLockElement === canvas) { actions.look(event.movementX,event.movementY); return }
     if (drag?.id !== event.pointerId) return
