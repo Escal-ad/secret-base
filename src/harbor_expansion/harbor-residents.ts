@@ -29,15 +29,17 @@ function makeResident(kit: ModelKit, entry: typeof RESIDENTS.people[number], ind
   if (extra.fishing) {
     actor.setFishingArm(-1.18)
     // 面向水面：长竿 + 鱼线 + 水面浮漂，远看也能认出在垂钓
-    actor.detailAnchor.add(kit.beam([[0.26, 1.02, 0.08], [0.36, 1.98, -1.38]], 0.032, ['#8a6a4a']))
-    actor.detailAnchor.add(kit.beam([[0.36, 1.98, -1.38], [0.38, -0.56, -1.66]], 0.013, ['#cdd8d6']))
-    actor.detailAnchor.add(kit.box([0.38, -0.56, -1.66], [0.10, 0.13, 0.10], ['#c0553f']))
+    actor.detailAnchor.add(kit.beam([[0.26, 1.02, 0.10], [0.36, 1.98, 1.42]], 0.032, ['#8a6a4a']))
+    actor.detailAnchor.add(kit.beam([[0.36, 1.98, 1.42], [0.38, -0.26, 1.70]], 0.013, ['#cdd8d6']))
+    actor.detailAnchor.add(kit.box([0.38, -0.26, 1.70], [0.10, 0.13, 0.10], ['#c0553f']))
+    // 小圆凳：挂在 avatar 上，不随身体起伏
+    actor.avatar.add(kit.cylinder([0, 0.22, 0], [0.23, 0.25, 0.42, 10], ['#8a6a4a']))
   }
   const umbrella = makeUmbrella(kit)
   umbrella.position.set(0.25, 1.02, 0.13)
   actor.avatar.add(umbrella)
-  const pose: HarborPlayer = { x, z, facing: extra.facing ?? index, elevation: groundElevation(x,z), speed: 0, height: 0,
-    landing: 0, jumpAge: 0, airborne: false, lookout: false, sitting: false, sailing: false, swimming: false }
+  const pose: HarborPlayer = { x, z, facing: extra.facing ?? index, elevation: groundElevation(x,z), speed: 0, height: extra.fishing ? 0.30 : 0,
+    landing: 0, jumpAge: 0, airborne: false, lookout: false, sitting: Boolean(extra.fishing), sailing: false, swimming: false }
   return { actor, pose, umbrella, spot: {x,z}, index, time: index * 3, accumulated: 0,
     home: nearestHome(x, z), sheltering: false, fishing: Boolean(extra.fishing),
     title: entry.name || `村民 ${index + 1}`, note: [entry.job, entry.line].filter(Boolean).join(' · ') || RESIDENTS.placeholder }
@@ -115,7 +117,7 @@ export function addHarborResidents(scene: T.Scene, kit: ModelKit, obstacles: rea
         if (!close && person.accumulated < RESIDENTS.cadence) continue
         const elapsed = person.accumulated; person.accumulated = 0
         person.time += elapsed
-        pose.sitting = !person.fishing && index % 3 === 0 && Math.sin(person.time * 0.22) < -0.28
+        pose.sitting = person.fishing || (index % 3 === 0 && Math.sin(person.time * 0.22) < -0.28)
         pose.speed = 0
         if (!person.fishing && !pose.sitting && index % 3 !== 2) walkResident(person,player,{step:elapsed,obstacles})
         person.umbrella.visible = options.rain > 0.32
