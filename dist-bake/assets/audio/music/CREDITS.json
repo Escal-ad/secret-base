@@ -1,0 +1,8 @@
+{
+  "music": [
+    {"file": "baguira.mp3", "title": "Baguira", "artist": "Kounine", "source": "https://github.com/brunosimon/folio-2025/tree/main/static/sounds/musics", "license": "CC0 1.0 Universal"},
+    {"file": "boy.mp3",     "title": "Boy",     "artist": "Kounine", "source": "https://github.com/brunosimon/folio-2025/tree/main/static/sounds/musics", "license": "CC0 1.0 Universal"},
+    {"file": "sudo.mp3",    "title": "Sudo",    "artist": "Kounine", "source": "https://github.com/brunosimon/folio-2025/tree/main/static/sounds/musics", "license": "CC0 1.0 Universal"}
+  ],
+  "note": "Artist name taken from the portfolio site's own credits text; verify before publishing. CC0 requires no attribution, credit is a courtesy."
+}

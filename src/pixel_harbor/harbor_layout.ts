@@ -5,6 +5,7 @@ import { SAILING } from './harbor_sailing_config'
 import { PROFILE_UI } from './harbor_profile'
 import { CAPTAIN } from './harbor_captain_config'
 import { KEEPER, LOOKOUT, SUNSET, VILLAGE } from './harbor_exploration_config'
+import { isLandAt, terrainHeightAt } from './harbor_heightmap'
 import { DECK, VILLAGE_PATHS } from './harbor_terrain'
 import { HILL } from '../harbor_expansion/harbor-hill-config'
 
@@ -100,8 +101,12 @@ export function canWalkAt(x: number, z: number, { obstacles, height, radius }: {
   obstacles: readonly WorldObstacle[]; height: number; radius?: number
 }) {
   const feet = playerFootprint(x, z, radius)
-  return contains(WATER.bounds, feet[0], feet[2]) && contains(WATER.bounds, feet[1], feet[3])
-    && !WATER.cells.some(cell => overlaps(feet, cell))
+  const sampled = isLandAt(x, z)
+  const onLand = sampled === undefined
+    ? contains(WATER.bounds, feet[0], feet[2]) && contains(WATER.bounds, feet[1], feet[3])
+      && !WATER.cells.some(cell => overlaps(feet, cell))
+    : sampled
+  return onLand
     && !obstacles.some(obstacle => !obstacle.supportOnly
       && (obstacle.height === undefined || height + HEIGHT_EPSILON < obstacle.height)
       && overlaps(feet, obstacle.footprint))
@@ -112,6 +117,9 @@ export function findSupportHeight(x: number, z: number, { obstacles, height }: {
 }) {
   const feet = playerFootprint(x, z)
   let floor = 0
+  // 烘焙高度图直接给出该点的最高面（屋顶、树冠、梯田、地面都包含在内）。
+  const terrain = terrainHeightAt(x, z)
+  if (terrain !== null) floor = Math.max(floor, terrain - DECK)
   for (const obstacle of obstacles) {
     if (obstacle.height !== undefined && obstacle.height <= height + HEIGHT_EPSILON && overlaps(feet, obstacle.footprint)) {
       floor = Math.max(floor, obstacle.height)

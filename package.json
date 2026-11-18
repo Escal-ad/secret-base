@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "bake": "vite build --ssr bake/bake.ts --outDir dist-bake --emptyOutDir && node dist-bake/bake.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },

@@ -9,6 +9,7 @@ import { LOOKOUT, SUNSET } from './harbor_exploration_config'
 import { HARBOR_LIGHTING, RENDER_QUALITY } from './harbor_lighting_config'
 import { readHarborNight, saveHarborNight } from './harbor_lighting_preferences'
 import { updatePlaceLabels } from './harbor_place_dom'
+import { loadHeightmap } from './harbor_heightmap'
 import type { mountHarbor } from './harbor_runtime'
 import { readVisitHistory, saveVisitHistory } from './harbor_visit_history'
 import type { Settings } from '../harbor_shell/harbor-settings'
@@ -34,6 +35,9 @@ function attachHarbor(options: Omit<RuntimeOptions, 'onError'>, handlers: {
       if (!active) return
       handlers.onProgress(RENDER_QUALITY.moduleProgress)
       await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+      if (!active) return
+      // 高度图决定「哪里能站、能走」；加载失败时 runtime 会退回旧的矩形判定。
+      await loadHeightmap(import.meta.env.BASE_URL + 'terrain.json')
       if (!active) return
       runtime = mountHarbor({ ...options, onError: () => handlers.onStatus('error') })
       handlers.onRuntime(runtime)
