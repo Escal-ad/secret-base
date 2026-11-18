@@ -230,7 +230,6 @@ const BOAT_VESSEL_ID = 'vessel'
 
 function addBoats(scene: T.Scene, kit: ModelKit) {
   const boats = [
-    { id: 'north-shore', point: [4.8, 0.035, -5.0], yaw: -0.12, size: 1.22, color: '#537984' },
     { id: BOAT_VESSEL_ID, point: [-0.3, 0.025, 8.8], yaw: 0.13, size: 1, color: '#65866e' },
     { id: 'east-shoal', point: [42, 0.03, -8], yaw: 0.62, size: 0.75, color: '#7a827d' },
     { id: 'outer-cay', point: [64, 0.03, -26], yaw: -0.28, size: 0.8, color: '#9c785b' },

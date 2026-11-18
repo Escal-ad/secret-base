@@ -8,14 +8,13 @@ import type { ModelKit } from './harbor_models'
 const WOOD = ['#805b45', 'wood'] as const
 const SIGN_BOARDS = [
   { x: -0.15, z: -1.97, yaw: -0.94, width: 1.48, height: 0.87, elevation: 2.16, kind: 'wayfinding' },
-  { x: HARBOR_DESTINATIONS.portfolio.x, z: -2.06, yaw: -0.38, width: 1.01, height: 0.32, elevation: 1.10, kind: 'boat' },
   { x: HARBOR_DESTINATIONS.notice.x, z: HARBOR_DESTINATIONS.notice.z, yaw: Math.PI / 2, width: 1.88, height: 1.18, elevation: 1.38, kind: 'notice' },
 ] as const
 
 type SignBoard = typeof SIGN_BOARDS[number]
 
 function signTexture(kind: SignBoard['kind']) {
-  const { canvas, context } = makeCanvas(176, kind === 'notice' ? 112 : kind === 'boat' ? 55 : 106)
+  const { canvas, context } = makeCanvas(176, kind === 'notice' ? 112 : kind === ('boat' as string) ? 55 : 106)
   const height = canvas.height
   context.fillStyle = '#735847'
   context.fillRect(0, 0, 176, height)
@@ -36,7 +35,7 @@ function signTexture(kind: SignBoard['kind']) {
     context.fillRect(157, 12, 5, 5)
   } else {
     context.fillStyle = '#f9e6bb'
-    context.fillText(kind === 'boat' ? '作品船' : '↑  作品船', 88, kind === 'boat' ? 29 : 23)
+    context.fillText(kind === ('boat' as string) ? '作品船' : '↑  作品船', 88, kind === ('boat' as string) ? 29 : 23)
     if (kind === 'wayfinding') {
       context.fillRect(14, 38, 148, 2)
       context.fillText('↶  展览公告栏', 88, 55)

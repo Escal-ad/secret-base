@@ -44,7 +44,6 @@ const RESPAWN_POINTS = [
 export const HARBOR_DESTINATIONS = {
   fishing: FISHING.place,
   wishing: WISHING.place,
-  portfolio: { kind: 'portfolio', id: 'portfolio', label: '查看作品集', x: 4.8, z: -1.05, radius: 2.4 },
   notice: { kind: 'notice', id: 'notice', label: '查看公告', x: -15.8, z: -1.9, radius: 2.5 },
   eval: { kind: 'eval', id: 'eval', label: evalStation.prompt, x: -10.8, z: 14.95, radius: 2.2 },
   mayor: { kind: 'mayor', id: PROFILE_UI.id, label: PROFILE_UI.action, ...PROFILE_UI.position, radius: PROFILE_UI.radius },
