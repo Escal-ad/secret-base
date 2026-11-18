@@ -15,6 +15,7 @@ import { MAP } from '../src/harbor_expansion/harbor-map-config'
 const RES = 1          // 网格精度（米）
 const RAY_TOP = 80     // 射线起点高度
 const RAY_BOTTOM = -20 // 射线终点高度（低于即视为海）
+const SUB = [0.18, 0.5, 0.82]
 const OUT = resolve('public/terrain.json')
 
 function buildScene() {
@@ -44,12 +45,19 @@ function main() {
     const z = north + (row + 0.5) * RES
     for (let col = 0; col < cols; col++) {
       const x = west + (col + 0.5) * RES
-      origin.set(x, RAY_TOP, z)
-      raycaster.set(origin, down)
-      raycaster.far = RAY_TOP - RAY_BOTTOM
-      const hit = raycaster.intersectObjects(scene.children, true)[0]
-      if (hit) {
-        heights[row * cols + col] = Math.round(hit.point.y * 100) / 100
+      // 每格打 3×3 条射线取最高点：树冠等细物体宽度小于网格时才不会被漏掉
+      let best = -1
+      for (const sx of SUB) {
+        for (const sz of SUB) {
+          origin.set(x + (sx - 0.5) * RES, RAY_TOP, z + (sz - 0.5) * RES)
+          raycaster.set(origin, down)
+          raycaster.far = RAY_TOP - RAY_BOTTOM
+          const hit = raycaster.intersectObjects(scene.children, true)[0]
+          if (hit && hit.point.y > best) best = hit.point.y
+        }
+      }
+      if (best >= 0) {
+        heights[row * cols + col] = Math.round(best * 100) / 100
         land++
       }
     }
