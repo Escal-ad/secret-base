@@ -26,10 +26,10 @@ function buildChair(kit: ModelKit) {
   chair.add(kit.box([0, 0.28, 0], [0.92, 0.10, 0.56], FRAME))
   chair.add(kit.box([0, 0.36, 0], [0.80, 0.06, 0.48], CLOTH))
   // 靠背向后倾斜
-  const back = kit.box([0, 0.95, -0.52], [0.94, 1.10, 0.10], FRAME)
+  const back = kit.box([0, 0.95, -0.62], [0.94, 1.10, 0.10], FRAME)
   back.rotation.x = -0.62
   // 椅背上沿的一道横木，视觉上更像包住头的靠背
-  const crest = kit.box([0, 1.50, -0.62], [1.02, 0.10, 0.14], FRAME)
+  const crest = kit.box([0, 1.50, -0.72], [1.02, 0.10, 0.14], FRAME)
   crest.rotation.x = -0.62
   chair.add(crest)
   chair.add(back)
@@ -150,7 +150,7 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     // 身体跟着椅背后仰，而不是笔直坐着
         actor.detailAnchor.rotation.x = seated && !indoors ? rock - 0.46 : rock
     // 后仰时整体后移，让躯干落进椅面而不是穿过靠背
-    actor.detailAnchor.position.z = seated && !indoors ? -0.11 : 0
+    actor.detailAnchor.position.z = seated && !indoors ? -0.02 : 0
     // 打盹：头随摇晃缓慢下垂、微微点头
     actor.head.rotation.x = seated && !indoors ? 0.06 + Math.sin(rockTime * 0.55) * 0.10 : 0
     lids.forEach(lid => { lid.visible = seated && !indoors })
