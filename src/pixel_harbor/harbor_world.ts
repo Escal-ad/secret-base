@@ -111,7 +111,8 @@ function addShore(group: T.Group, kit: ModelKit) {
   group.add(kit.box([(fillWest + fillEast) / 2, VILLAGE.upperY - 2.4, (fillNorth + fillSouth) / 2],
     [fillEast - fillWest, 4.8, fillSouth - fillNorth], ['#8ca06a', 'grass']))
   // 石台西半边改成草地（村长小屋那一侧），东半边仍是石板，中间在 x=-11.6 拼缝
-  group.add(slab(kit, [WEST_BANK[1], SOUTH_QUAY[1], SOUTH_QUAY[2], SOUTH_QUAY[3]], STONE))
+  // 南湾石台整块铺草：西岸草地已覆盖 x<=-12 / z 11~22，这里只补它没盖到的部分
+  group.add(slab(kit, [WEST_BANK[1], SOUTH_QUAY[1], SOUTH_QUAY[2], SOUTH_QUAY[3]], ['#8ca06a', 'grass']))
   group.add(slab(kit, SOUTH_QUAY_GRASS, ['#8ca06a', 'grass']))
   group.add(slab(kit, [10.4, 22, 16.1, 19.9], STONE))
   group.add(kit.box([-10, DECK - 0.012, 12.2], [31, 0.026, 2.4], ['#c7b299', 'brick']))
