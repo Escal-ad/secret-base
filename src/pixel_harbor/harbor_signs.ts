@@ -7,7 +7,6 @@ import type { ModelKit } from './harbor_models'
 
 const WOOD = ['#805b45', 'wood'] as const
 const SIGN_BOARDS = [
-  { x: -0.15, z: -1.97, yaw: -0.94, width: 1.48, height: 0.87, elevation: 2.16, kind: 'wayfinding' },
   { x: HARBOR_DESTINATIONS.notice.x, z: HARBOR_DESTINATIONS.notice.z, yaw: Math.PI / 2, width: 1.88, height: 1.18, elevation: 1.38, kind: 'notice' },
 ] as const
 
