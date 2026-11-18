@@ -497,7 +497,6 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
   // 交界处那对石墩也不放，避免桥口两边各插一根。
   addPier(staticWorld, kit, { area: PIER, deckFrom: WEST_BANK[1], postSkip: 1 })
   addPier(staticWorld, kit, { area: LANDING })
-  const helicopter = addHelicopter(staticWorld, kit)
   addVillage(staticWorld, kit)
   addDockProps(staticWorld, kit)
   addWestCoast(staticWorld, kit)
@@ -513,6 +512,9 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
   const flightVolumes = getFlightVolumes(staticWorld)
   const treeTops = collectTreeTops(staticWorld)
   batchBlocks(staticWorld)
+  // 直升机必须在批处理之后加：batchBlocks 会把 BoxGeometry 合并进 InstancedMesh，
+  // 合并后 group 里就没有网格了，飞行时移动它不会有任何视觉变化。
+  const helicopter = addHelicopter(staticWorld, kit)
   scene.add(staticWorld)
   const { boats, vessel, yacht, bases } = addBoats(scene, kit)
   const animate = (elapsed: number, bank: number) => {
