@@ -291,7 +291,7 @@ function addEastDockFittings(group: T.Group, kit: ModelKit) {
   // 东堤钓位的凳子：与渔民坐的凳子同款同尺寸
   group.add(kit.cylinder([21.80, DECK + 0.22, 17.87], [0.23, 0.25, 0.42, 10], ['#8a6a4a']))
   // 渔民脚边的装鱼木桶：桶身 + 桶箍 + 里面的水和两条鱼
-  const bucketX = 13.85, bucketZ = 16.30
+  const bucketX = 14.37, bucketZ = 16.34
   group.add(kit.cylinder([bucketX, DECK + 0.19, bucketZ], [0.26, 0.24, 0.38, 9], ['#7b6248']))
   for (const y of [0.10, 0.30]) {
     group.add(kit.cylinder([bucketX, DECK + y, bucketZ], [0.27, 0.27, 0.05, 9], ['#5d4a36']))
