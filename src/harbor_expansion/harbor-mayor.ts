@@ -148,9 +148,14 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     pose.height = seated ? 0.34 : 0
     actor.update(pose, step, reduced)
     // 身体跟着椅背后仰，而不是笔直坐着
-        actor.detailAnchor.rotation.x = seated && !indoors ? rock - 0.46 : rock
-    // 后仰时整体后移，让躯干落进椅面而不是穿过靠背
-    actor.detailAnchor.position.z = seated && !indoors ? -0.02 : 0
+        // 身体绕脚底旋转会把腿也带起来；用位移补偿把臀部摁回椅面
+    actor.detailAnchor.rotation.x = seated && !indoors ? rock - 0.40 : rock
+    if (seated && !indoors) {
+      actor.detailAnchor.position.z = 0.20
+      actor.detailAnchor.position.y += 0.06
+    } else {
+      actor.detailAnchor.position.z = 0
+    }
     // 打盹：头随摇晃缓慢下垂、微微点头
     actor.head.rotation.x = seated && !indoors ? 0.06 + Math.sin(rockTime * 0.55) * 0.10 : 0
     lids.forEach(lid => { lid.visible = seated && !indoors })
