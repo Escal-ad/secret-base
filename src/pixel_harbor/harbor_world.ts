@@ -163,7 +163,7 @@ function addNetRack(group: T.Group, kit: ModelKit) {
 
 function addDockProps(group: T.Group, kit: ModelKit) {
   addNetRack(group, kit)
-  for (const [x, z] of [[-1.2, 2.34], [-1.2, 0], [-1.2, -2.34], [9, -2.34], [16.4, 2.69], [-13.4, -14.9], [-10.5, 13.4]]) {
+  for (const [x, z] of [[-1.2, 2.34], [-1.2, -2.34], [9, -2.34], [16.4, 2.69], [-13.4, -14.9], [-10.5, 13.4]]) {
     addLantern(group, kit, [x, DECK, z])
   }
   for (const [x, z] of [[-8, -2.05], [13.8, 3.12], [0, 12.2], [-6.9, 15.9], [-21, 2.6]]) {

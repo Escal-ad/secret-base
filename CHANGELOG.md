@@ -22,3 +22,4 @@
 - 站名改为 Escal's Secret Base，唯一运行时来源为 `src/site-config.ts` 的 `config.siteTitle`。
 - 生产构建和预览使用 GitHub Pages 项目页路径 `/secret-base/`，开发仍使用 `/`；本地作品图也跟随同一前缀。
 - 新增 [GitHub Pages 部署说明](docs/DEPLOY.md)，记录手动发布步骤及 CI 路线的锁文件前置条件。
+- 删掉栈桥中段 `(-1.2, 0)` 那盏路灯，栈桥只保留 z = ±2.34 两盏对称的灯。
