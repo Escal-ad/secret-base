@@ -82,6 +82,8 @@ function makeResident(kit: ModelKit, entry: typeof RESIDENTS.people[number], ind
     landing: 0, jumpAge: 0, airborne: false, lookout: false, sitting: Boolean(extra.fishing), sailing: false, swimming: false }
   return { actor, pose, umbrella, glass, spot: {x,z}, index, time: index * 3, accumulated: 0,
     home: nearestHome(x, z), homeDoor: extra.homeDoor ?? ([x, z] as const),
+    // 原本的朝向：收工/回钓位走动之后用它把脸转回海那边
+    homeFacing: extra.facing ?? index,
     sheltering: false, fishing: Boolean(extra.fishing),
     guard: Boolean(extra.guard), post: Boolean(extra.post),
     // 值守状态：坐着/站着、坐站计时、看海计时、手臂角度
@@ -257,7 +259,11 @@ export function addHarborResidents(scene: T.Scene, kit: ModelKit, obstacles: rea
           actor.update(pose, elapsed, options.reduced)
           continue
         }
-        if (person.fishing) pose.height = 0.30
+        if (person.fishing) {
+          pose.height = 0.30
+          // 钓鱼时始终面朝海：夜里收工走回钓位之后，朝向会停在走路的那个方向，这里慢慢转回来
+          pose.facing = dampAngle(pose.facing, person.homeFacing, dampingFactor(elapsed, 0.6))
+        }
         pose.sitting = person.fishing || (index % 3 === 0 && Math.sin(person.time * 0.22) < -0.28)
         pose.speed = 0
         // 固定岗哨（守塔人）不走路：坐/站切换 + 举望远镜看海都在 updatePost 里。

@@ -1,5 +1,5 @@
 import * as T from 'three'
-import { DECK, HEADLAND, LANDING, PIER, SOUTH_QUAY, WEST_BANK } from './harbor_layout'
+import { DECK, HEADLAND, HEADLAND_FILL, LANDING, PIER, SOUTH_QUAY, TERRACE_WEST_FILL, WEST_BANK } from './harbor_layout'
 import type { WorldObstacle } from './harbor_layout'
 import { groundElevation } from './harbor_terrain'
 import type { Footprint } from './harbor_layout'
@@ -103,6 +103,13 @@ function addShore(group: T.Group, kit: ModelKit) {
   // 岬角拆成两块：西岸已经盖住的 x −17~−12 / z −21~−12 不再铺，否则两块地面同高共面会互相闪。
   group.add(slab(kit, [HEADLAND[0], WEST_BANK[1], HEADLAND[2], WEST_BANK[2]], ['#8ca06a', 'grass']))
   group.add(slab(kit, [WEST_BANK[1], HEADLAND[1], HEADLAND[2], HEADLAND[3]], ['#8ca06a', 'grass']))
+  // 岬角西南角的水湾补成草地：跟西岸、岬角同一片绿，南岸线接 z=-25、西岸线接 x=-30，
+  // 全部落在整数米上，和相邻地块的边严丝合缝、彼此平行。
+  group.add(slab(kit, HEADLAND_FILL, ['#8ca06a', 'grass']))
+  // 梯田西侧的水缝填平：和梯田同高（VILLAGE.upperY = 2 米），颜色用村长小屋那一片的绿。
+  const [fillWest, fillEast, fillNorth, fillSouth] = TERRACE_WEST_FILL
+  group.add(kit.box([(fillWest + fillEast) / 2, VILLAGE.upperY - 2.4, (fillNorth + fillSouth) / 2],
+    [fillEast - fillWest, 4.8, fillSouth - fillNorth], ['#8ca06a', 'grass']))
   group.add(slab(kit, SOUTH_QUAY, STONE))
   group.add(slab(kit, [10.4, 22, 16.1, 19.9], STONE))
   group.add(kit.box([-10, DECK - 0.012, 12.2], [31, 0.026, 2.4], ['#c7b299', 'brick']))
@@ -157,13 +164,75 @@ function addCottages(group: T.Group, kit: ModelKit) {
   }
 }
 
+// 后村最上层梯田上的直升机停机坪：混凝土面 + 白色 H 与圆环 + 一圈木围栏（东侧留门）。
+// top 取最后一层梯田的台面高度（6.56 米），坪面比草地高 9 厘米，避免和草皮共面闪烁。
+const LAST_TERRACE = VILLAGE_TERRACES[VILLAGE_TERRACES.length - 1]
+export const HELIPAD = { x: -13, z: 50, size: 12, gate: 4, top: LAST_TERRACE.y } as const
+
+/** 围栏的走向：四边各一条，东边正中留 4 米宽的门。 */
+function helipadFenceRuns() {
+  const { x, z, size, gate } = HELIPAD
+  const half = size / 2
+  const north = z - half, south = z + half, west = x - half, east = x + half
+  const g = gate / 2
+  return [
+    [west, north, east, north], [west, south, east, south], [west, north, west, south],
+    [east, north, east, z - g], [east, z + g, east, south],
+  ] as [number, number, number, number][]
+}
+
+export const HELIPAD_OBSTACLES: Footprint[] = helipadFenceRuns().map(([x0, z0, x1, z1]) => [
+  Math.min(x0, x1) - 0.08, Math.max(x0, x1) + 0.08,
+  Math.min(z0, z1) - 0.08, Math.max(z0, z1) + 0.08])
+
+const HELIPAD_PAINT: Paint = ['#7a7d80', 'brick']
+const HELIPAD_MARK: Paint = ['#e9e7e0']
+
+function addHelipad(group: T.Group, kit: ModelKit) {
+  const { x, z, size, top } = HELIPAD
+  // 混凝土坪面
+  group.add(kit.box([x, top + 0.03, z], [size, 0.12, size], HELIPAD_PAINT))
+  // 中央的白色 H
+  for (const side of [-1, 1]) {
+    group.add(kit.box([x + side * 1.15, top + 0.1, z], [0.55, 0.02, 3.1], HELIPAD_MARK))
+  }
+  group.add(kit.box([x, top + 0.1, z], [1.75, 0.02, 0.5], HELIPAD_MARK))
+  // 外面一圈白色圆环（16 段拼成）
+  for (let index = 0; index < 16; index += 1) {
+    const angle = index * Math.PI / 8
+    const segment = kit.box([x + Math.cos(angle) * 4.3, top + 0.1, z + Math.sin(angle) * 4.3],
+      [0.18, 0.02, 1.72], HELIPAD_MARK)
+    segment.rotation.y = -angle
+    group.add(segment)
+  }
+}
+
+function addHelipadFence(group: T.Group, kit: ModelKit) {
+  const { top } = HELIPAD
+  for (const [x0, z0, x1, z1] of helipadFenceRuns()) {
+    const length = Math.hypot(x1 - x0, z1 - z0)
+    const posts = Math.max(2, Math.round(length / 2) + 1)
+    for (let index = 0; index < posts; index += 1) {
+      const t = index / (posts - 1)
+      group.add(kit.box([x0 + (x1 - x0) * t, top + 0.55, z0 + (z1 - z0) * t],
+        [0.12, 1.1, 0.12], TIMBER))
+    }
+    for (const y of [0.45, 0.95]) {
+      group.add(kit.beam([[x0, top + y, z0], [x1, top + y, z1]], 0.07, TIMBER))
+    }
+  }
+}
+
 function addVillage(group: T.Group, kit: ModelKit) {
   addCottages(group, kit)
+  addHelipad(group, kit)
+  addHelipadFence(group, kit)
   // 守塔人小屋：从岬角西侧 (-8,-21) 往东挪到灯塔附近 (-2.69,-21.21)，门仍朝 +z（朝港口）。
   placeHouse(group, kit, { position: [-2.69, DECK, -21.21], size: HOUSE_SIZE, color: 2, yaw: Math.PI })
   placeHouse(group, kit, { position: [-24.7, DECK, -3], size: HOUSE_SIZE, color: 1, yaw: -Math.PI / 2 })
   for (const { tier, y, z, lots } of VILLAGE_TERRACES) {
-    group.add(kit.box([-9, y - 2.4, z + 10], [39 - tier * 2.8, 4.8, 21], ['#8a9b76', 'grass']))
+    // 梯田草皮统一成村长小屋前那片绿（#8ca06a），和西岸/岬角一致。
+    group.add(kit.box([-9, y - 2.4, z + 10], [39 - tier * 2.8, 4.8, 21], ['#8ca06a', 'grass']))
     const span = tier === 0 ? VILLAGE.ramp[0] + 28 : 38 - tier * 2.8
     const mid = tier === 0 ? (VILLAGE.ramp[0] - 28) / 2 : -9
     group.add(kit.box([mid, y - 0.62, z - 0.49], [span, 1.24, 0.55], STONE))
@@ -312,6 +381,7 @@ export const TERRACE_ROOFS: { footprint: Footprint; height: number }[] = TERRACE
 
 export const WORLD_OBSTACLES: Footprint[] = [
   ...HARBOR_STRUCTURES.map(structure => structure.footprint),
+  ...HELIPAD_OBSTACLES,
   ...TERRACE_HOUSES.map(house => house.footprint),
   ...TERRACE_TRUNKS,
   ...HILL_OBSTACLES,
