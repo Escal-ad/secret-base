@@ -44,6 +44,7 @@ const RESPAWN_POINTS = [
 export const HARBOR_DESTINATIONS = {
   fishing: FISHING.place,
   wishing: WISHING.place,
+  chair: { kind: 'chair', id: 'chair', label: '坐到摇椅上', x: -22.15, z: 0.62, radius: 1.8 },
   notice: { kind: 'notice', id: 'notice', label: '查看公告', x: -15.8, z: -1.9, radius: 2.5 },
   eval: { kind: 'eval', id: 'eval', label: evalStation.prompt, x: -10.8, z: 14.95, radius: 2.2 },
   mayor: { kind: 'mayor', id: PROFILE_UI.id, label: PROFILE_UI.action, ...PROFILE_UI.position, radius: PROFILE_UI.radius },

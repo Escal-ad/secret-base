@@ -325,6 +325,23 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
       return
     }
     if (hotspot.kind==='dock'){options.onActivityRequest('dock');return}
+    if (hotspot.kind==='chair') {
+      const person = motion.player
+      if (person.sitting) {
+        person.sitting = false
+        person.x = hotspot.x + 0.9
+        person.z = hotspot.z
+        person.height = 0
+        person.facing = Math.PI
+      } else {
+        person.sitting = true
+        person.x = hotspot.x
+        person.z = hotspot.z
+        person.height = 0.42
+        person.facing = Math.PI / 2
+      }
+      return
+    }
     if (hotspot.kind==='gull'){extension.gulls.pet(distance=>options.play('gull',{distance}));return}
     if (hotspot.kind==='resident') options.play('greeting',{pitch:0.84+Number(hotspot.id.slice(-1))*0.09})
     if (hotspot.kind==='captain') options.play('greeting',{pitch:0.76})
