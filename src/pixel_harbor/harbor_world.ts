@@ -288,15 +288,11 @@ function addEastDockFittings(group: T.Group, kit: ModelKit) {
     group.add(kit.box([x, DECK + 0.60, 16.62], [0.26, 0.07, 0.26], ['#8a7a68']))
   }
   group.add(kit.box([16, DECK + 0.04, 16.34], [11.0, 0.12, 0.22], TIMBER))
-  // 可坐的小木台（东堤钓位旁）
-  group.add(kit.box([21.39, DECK + 0.44, 17.35], [1.05, 0.10, 0.62], TIMBER))
-  for (const dx of [-0.42, 0.42]) {
-    for (const dz of [-0.22, 0.22]) {
-      group.add(kit.box([21.39 + dx, DECK + 0.22, 17.35 + dz], [0.09, 0.44, 0.09], TIMBER))
-    }
-  }
+  // 渔民同款的石圆凳
+  group.add(kit.cylinder([14.20, DECK + 0.21, 17.10], [0.32, 0.30, 0.42, 10], ['#9a958c']))
+  group.add(kit.cylinder([14.20, DECK + 0.43, 17.10], [0.34, 0.34, 0.05, 10], ['#b3ada2']))
   // 渔民脚边的装鱼木桶：桶身 + 桶箍 + 里面的水和两条鱼
-  const bucketX = 14.9, bucketZ = 16.62
+  const bucketX = 14.62, bucketZ = 17.22
   group.add(kit.cylinder([bucketX, DECK + 0.19, bucketZ], [0.26, 0.24, 0.38, 9], ['#7b6248']))
   for (const y of [0.10, 0.30]) {
     group.add(kit.cylinder([bucketX, DECK + y, bucketZ], [0.27, 0.27, 0.05, 9], ['#5d4a36']))

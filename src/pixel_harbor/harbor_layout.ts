@@ -45,7 +45,7 @@ export const HARBOR_DESTINATIONS = {
   fishing: FISHING.place,
   wishing: WISHING.place,
   chair: { kind: 'chair', id: 'chair', label: '坐到摇椅上', x: -22.15, z: 0.62, radius: 1.8 },
-  bench: { kind: 'chair', id: 'bench', label: '坐下歇会儿', x: 21.39, z: 17.35, radius: 1.5, note: '0.52' },
+  bench: { kind: 'chair', id: 'bench', label: '坐下歇会儿', x: 14.20, z: 17.10, radius: 1.2, note: '0.52' },
   notice: { kind: 'notice', id: 'notice', label: '查看公告', x: -15.8, z: -1.9, radius: 2.5 },
   eval: { kind: 'eval', id: 'eval', label: evalStation.prompt, x: -10.8, z: 14.95, radius: 2.2 },
   mayor: { kind: 'mayor', id: PROFILE_UI.id, label: PROFILE_UI.action, ...PROFILE_UI.position, radius: PROFILE_UI.radius },
@@ -62,7 +62,6 @@ export const HARBOR_DESTINATIONS = {
 export const LANDMARKS = [
   // 这两个只为了在头顶显示名牌；位置与村长 / 钓鱼渔民重合
   { id: 'mayor-name', x: -22.15, z: 0.55, radius: 1.6, label: '村长', note: '欢迎来到我的岛屿。' },
-  { id: 'fisher-name', x: 13.5, z: 16.3, radius: 1.6, label: '渔民', note: '想要钓鱼吗？' },
   { id: 'sunrise', x: 15.5, z: -0.7, radius: 2, label: '日出观景台', note: '从这里能看到朝阳下的浮标与远航渔船。' },
   ...SAILING.docks.map(dock => ({ id: dock.id, ...dock.land, radius: SAILING.boardingRadius,
     label: dock.title, note: dock.note })),

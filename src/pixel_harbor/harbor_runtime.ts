@@ -378,7 +378,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     flightEnabled: () => options.settings().flight,
     canJump: () => !fishing.active && !panelOpen && !tracker.hasOpen() && !transitionLocked && !activity.mode,
     canMove: () => !motion.player.sitting && !fishing.active && !transitionLocked && !menuOpen && !scope.active && (activity.mode === null || activity.mode === 'lookout' || activity.mode==='drive'),
-    canLook: () => !fishing.active && !transitionLocked && !panelOpen && (activity.mode !== 'sunset' && activity.mode !=='tour'),
+    canLook: () => !transitionLocked && !panelOpen && (activity.mode !== 'sunset' && activity.mode !=='tour'),
     canSteer: () => !transitionLocked && !menuOpen && activity.mode==='drive',
     sprintEnabled: ()=>!menuOpen,
     lockPointer: () => options.settings().view==='first' && !fishing.active && !panelOpen && !scope.active,
