@@ -32,6 +32,15 @@ function buildChair(kit: ModelKit) {
     chair.add(kit.box([side * 0.42, 0.14, 0.22], [0.08, 0.28, 0.08], FRAME))
     chair.add(kit.box([side * 0.42, 0.20, -0.24], [0.08, 0.40, 0.08], FRAME))
   }
+  // 摇椅底弧：前后两条翘起的木条
+  for (const side of [-1, 1]) {
+    for (const fore of [-1, 1]) {
+      const tip = kit.box([side * 0.42, 0.10, fore * 0.62], [0.09, 0.07, 0.42], FRAME)
+      tip.rotation.x = fore * 0.34
+      chair.add(tip)
+    }
+    chair.add(kit.box([side * 0.42, 0.03, 0], [0.09, 0.06, 1.02], FRAME))
+  }
   return chair
 }
 
@@ -51,6 +60,7 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     speed: 0, height: 0, elevation: 0, airborne: false, jumpAge: 0, landing: 0,
     sailing: false, sitting: true, lookout: false, swimming: false,
   }
+  let rockTime = 0
   let indoors = false
   let seated = true
 
@@ -93,6 +103,9 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     } else {
       pose.speed = 0
     }
+    // 坐在摇椅上时缓慢前后摇晃
+    rockTime += step
+    chair.rotation.x = seated && !indoors ? Math.sin(rockTime * 1.5) * 0.055 : 0
     if (indoors) return
     pose.elevation = groundElevation(pose.x, pose.z)
     // 坐在躺椅上时稍微抬高，落在椅面而不是地面。

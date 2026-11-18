@@ -103,7 +103,9 @@ function addShore(group: T.Group, kit: ModelKit) {
   for (let index = 0; index < 16; index++) {
     addRock(group, kit, [8.25 + random(), 0.23, -12.4 - index * 0.83], [0.67, 0.74, 0.69])
     const x = -28 + random() * 2.6, z = -19 + index * 2.57, size = 0.9 + random() * 0.65
-    if (z < -12.3 || z > -8.4) addTree(group,kit,[x,DECK,z],size)
+    // 村长小屋 (-24.7,-3) 周边 7 米内不种树
+    const nearMayor = Math.hypot(x + 24.7, z + 3) < 7
+    if ((z < -12.3 || z > -8.4) && !nearMayor) addTree(group,kit,[x,DECK,z],size)
   }
 }
 
@@ -178,19 +180,6 @@ function addDockProps(group: T.Group, kit: ModelKit) {
   group.add(kit.beam([[3.22, 1.02, -2.45], [4.54, 0.67, -4.45]], 0.034, ROPE))
 }
 
-function addPowerLines(group: T.Group, kit: ModelKit) {
-  const x = -21.6
-  for (const z of [-11, -3.9, 3.2]) {
-    group.add(kit.box([x, 2.6, z], [0.19, 3.9, 0.20], TIMBER))
-    group.add(kit.box([x, 4.21, z], [0.85, 0.12, 0.15], TIMBER))
-  }
-  for (const dx of [-0.33, 0.33]) for (const z of [-11, -3.9]) {
-    const wireX = x + dx
-    const midpoint: Point = [wireX, 4.00, z + 3.55]
-    group.add(kit.beam([[wireX, 4.31, z], midpoint], 0.028, ['#646059']))
-    group.add(kit.beam([midpoint, [wireX, 4.31, z + 7.1]], 0.028, ['#646059']))
-  }
-}
 
 function addWestCoast(group: T.Group, kit: ModelKit) {
   const sand: Paint = ['#c1a784', 'grass']
@@ -330,7 +319,6 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
   addPier(staticWorld, kit, LANDING)
   addVillage(staticWorld, kit)
   addDockProps(staticWorld, kit)
-  addPowerLines(staticWorld, kit)
   addWestCoast(staticWorld, kit)
   addHarborHill(staticWorld,kit)
   const tower = makeLighthouse(kit)
