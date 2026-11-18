@@ -52,11 +52,7 @@ function buildChair(kit: ModelKit) {
       chair.add(seg)
     }
   }
-  // 座位锚点：座面（0.36 + 0.03）正上方，人物挂到这个点上
-  const seat = new T.Object3D()
-  seat.position.set(0, 0.41, 0.02)
-  chair.add(seat)
-  return { chair, seat }
+  return chair
 }
 
 // 打瞌睡时头顶飘出的「Z」：每片独立材质，方便单独控制透明度
@@ -73,7 +69,7 @@ function makeZMark() {
 }
 
 export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
-  const { chair, seat } = buildChair(kit)
+  const chair = buildChair(kit)
   const chairY = DECK + groundElevation(MAYOR_NPC.chair.x, MAYOR_NPC.chair.z)
   chair.position.set(MAYOR_NPC.chair.x, chairY, MAYOR_NPC.chair.z)
   chair.rotation.order = 'YXZ'
@@ -98,10 +94,6 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     speed: 0, height: 0, elevation: 0, airborne: false, jumpAge: 0, landing: 0,
     sailing: false, sitting: true, lookout: false, swimming: false,
   }
-  const SIT_WORLD = new T.Vector3()
-  const HIP_HEIGHT = 0.46
-  // 整体抬升量：唯一需要手调的补偿，坐高了调小、坐低了调大
-  const SEAT_LIFT = 0.14
   let rockTime = 0
   let indoors = false
   let seated = true
@@ -114,7 +106,7 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
       const distance = Math.hypot(dx, dz)
       if (distance < MAYOR_NPC.hideDistance) {
         indoors = true
-        actor.avatar.visible = true   // 调试期强制可见，坐姿调好后再恢复
+        actor.avatar.visible = false
       } else {
         const pace = Math.min(MAYOR_NPC.walkSpeed * step, distance)
         pose.x += dx / distance * pace
@@ -153,18 +145,17 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     if (indoors) return
     pose.elevation = groundElevation(pose.x, pose.z)
     // 坐在躺椅上时稍微抬高，落在椅面而不是地面。
-    pose.height = 0
+    pose.height = seated ? 0.34 : 0
     actor.update(pose, step, reduced)
     // 身体跟着椅背后仰，而不是笔直坐着
-        // 坐姿交给角色的姿态接口，外面只保留摇晃
-    actor.setSitPosture(seated && !indoors ? 1 : 0)
+        // 身体绕脚底旋转会把腿也带起来；用位移补偿把臀部摁回椅面
+    actor.detailAnchor.rotation.x = seated && !indoors ? rock - 0.40 : rock
     if (seated && !indoors) {
-      // 直接用座位锚点的世界坐标对位：人在座面上，随椅子一起摇
-      seat.getWorldPosition(SIT_WORLD)
-      actor.avatar.position.set(SIT_WORLD.x, SIT_WORLD.y - HIP_HEIGHT + SEAT_LIFT, SIT_WORLD.z)
-      actor.avatar.rotation.y = MAYOR_NPC.restYaw
+      actor.detailAnchor.position.z = 0.23
+      actor.detailAnchor.position.y += 0.06
+    } else {
+      actor.detailAnchor.position.z = 0
     }
-    actor.detailAnchor.rotation.x += seated && !indoors ? rock : 0
     // 打盹：头随摇晃缓慢下垂、微微点头
     actor.head.rotation.x = seated && !indoors ? 0.06 + Math.sin(rockTime * 0.55) * 0.10 : 0
     lids.forEach(lid => { lid.visible = seated && !indoors })
