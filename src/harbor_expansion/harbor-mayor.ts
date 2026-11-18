@@ -26,8 +26,12 @@ function buildChair(kit: ModelKit) {
   chair.add(kit.box([0, 0.28, 0], [0.92, 0.10, 0.56], FRAME))
   chair.add(kit.box([0, 0.36, 0], [0.80, 0.06, 0.48], CLOTH))
   // 靠背向后倾斜
-  const back = kit.box([0, 0.66, -0.38], [0.88, 0.62, 0.09], FRAME)
+  const back = kit.box([0, 0.95, -0.52], [0.94, 1.10, 0.10], FRAME)
   back.rotation.x = -0.62
+  // 椅背上沿的一道横木，视觉上更像包住头的靠背
+  const crest = kit.box([0, 1.50, -0.62], [1.02, 0.10, 0.14], FRAME)
+  crest.rotation.x = -0.62
+  chair.add(crest)
   chair.add(back)
   for (const side of [-1, 1]) {
     chair.add(kit.box([side * 0.42, 0.14, 0.22], [0.08, 0.28, 0.08], FRAME))
@@ -77,6 +81,13 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   })
   const zMarks = [makeZMark(), makeZMark(), makeZMark()]
   zMarks.forEach(z => actor.avatar.add(z))
+  // 闭眼贴片：眼睛位置的两块肤色小方块，打盹时盖上即为闭眼
+  const lids = [-1, 1].map(side => {
+    const lid = kit.box([side * 0.112, 1.248, 0.206], [0.074, 0.076, 0.012], ['#d9b394'])
+    lid.visible = false
+    actor.head.add(lid)
+    return lid
+  })
   scene.add(actor.avatar)
   const pose: HarborPlayer = {
     x: MAYOR_NPC.chair.x, z: MAYOR_NPC.chair.z, facing: MAYOR_NPC.restYaw,
@@ -140,6 +151,7 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     actor.detailAnchor.rotation.x = seated && !indoors ? rock - 0.55 : rock
     // 打盹：头随摇晃缓慢下垂、微微点头
     actor.head.rotation.x = seated && !indoors ? 0.22 + Math.sin(rockTime * 0.55) * 0.10 : 0
+    lids.forEach(lid => { lid.visible = seated && !indoors })
     // Z 字：从头顶往上飘，同时放大并淡出，循环三片
     zMarks.forEach((mark, index) => {
       const phase = ((rockTime * 0.22) + index / zMarks.length) % 1
