@@ -22,17 +22,51 @@ const JUMP_PEAK = JUMP.lift ** 2 / (2 * JUMP.gravity)
 type Appearance = typeof AVATAR_APPEARANCE & {
   skin?: string; boots?: string; traveler?: boolean; badge?: string; hairstyle?: string;
   shoulderBag?: boolean; faceVariant?: number;
-  // 头饰变体：默认按 hat 推导，村民用它区分渔帽/头巾。
-  headwear?: 'straw' | 'cap' | 'bandana' | 'none';
+  // 头饰变体：默认按 hat 推导，村民用它区分斗笠/渔帽/头巾。
+  headwear?: 'straw' | 'cap' | 'souwester' | 'helmet' | 'bandana' | 'none';
+  // 头饰配色：不填就用该变体的默认色。
+  headwearColors?: { crown: string; band: string };
+  // 斜挎缆绳：水上职业的身份标识，颜色由配置给出。
+  rope?: { color: string };
 }
 
 function scaled([x, y, z]: Point): Point {
   return [x * VOXEL, y * VOXEL, z * VOXEL]
 }
 
+// 头饰单独成一个函数：斗笠、船员帽、油布渔帽、头巾共用同一套头部坐标。
+function addHeadwear(head: T.Group, kit: ModelKit, appearance: Appearance) {
+  const headwear = appearance.headwear ?? (appearance.hat ? 'straw' : 'none')
+  if (headwear === 'straw') {
+    head.add(kit.box(scaled([0, 22.25, 0.35]), scaled([9.5, 0.9, 8.5]), [HAT]))
+    head.add(kit.box(scaled([0, 23.45, 0]), scaled([7.25, 1.45, 6.3]), [HAT_BAND]))
+    head.add(kit.box(scaled([0, 24.15, 0]), scaled([6.65, 1.03, 5.75]), [HAT]))
+  } else if (headwear === 'cap') {
+    head.add(kit.box(scaled([0, 22.9, 0]), scaled([7.6, 2.1, 6.8]), ['#5d5a52']))
+    head.add(kit.box(scaled([0, 22.5, 3.4]), scaled([7.9, 0.55, 2.2]), ['#4e4b45']))
+  } else if (headwear === 'souwester') {
+    // 油布渔帽：矮顶 + 一圈宽檐 + 后颈垂片（雨从脖领流走），和渔民的斗笠区分开。
+    const crown = appearance.headwearColors?.crown ?? HAT
+    const band = appearance.headwearColors?.band ?? HAT_BAND
+    head.add(kit.box(scaled([0, 22.35, -0.25]), scaled([9.3, 0.8, 9.4]), [crown]))
+    head.add(kit.box(scaled([0, 21.45, -3.9]), scaled([8.3, 2.1, 1.7]), [crown]))
+    head.add(kit.box(scaled([0, 23.15, 0]), scaled([7.8, 1.5, 6.85]), [band]))
+    head.add(kit.box(scaled([0, 24.05, 0]), scaled([6.2, 1.0, 5.5]), [crown]))
+  } else if (headwear === 'helmet') {
+    // 铁盔：帽箍压住发顶，上面是圆的盔壳，正中一道盔脊。
+    head.add(kit.box(scaled([0, 22.0, 0]), scaled([8.3, 0.7, 7.7]), ['#7f878d']))
+    head.add(kit.box(scaled([0, 22.95, 0]), scaled([7.0, 1.3, 6.6]), ['#8d949a']))
+    head.add(kit.box(scaled([0, 23.8, 0]), scaled([4.6, 0.6, 5.4]), ['#8d949a']))
+    head.add(kit.box(scaled([0, 24.05, 0]), scaled([1.1, 0.5, 5.8]), ['#6f767c']))
+  } else if (headwear === 'bandana') {
+    head.add(kit.box(scaled([0, 21.7, 0]), scaled([7.7, 1.5, 6.8]), ['#a2544c']))
+    head.add(kit.box(scaled([0, 21.1, -3.05]), scaled([2.0, 1.6, 1.4]), ['#8d453f']))
+  }
+}
+
 function makeHead(kit: ModelKit, appearance: Appearance) {
   const head = new T.Group()
-  const { hair, hat } = appearance
+  const { hair } = appearance
   const skin = appearance.skin ?? SKIN
   head.add(kit.box(scaled([0, 19, 0]), scaled([7, 6, 6]), [skin]))
   head.add(kit.box(scaled([0, 20.5, -1.6]), scaled([7.4, 4.2, 3.6]), [hair]))
@@ -51,18 +85,7 @@ function makeHead(kit: ModelKit, appearance: Appearance) {
     head.add(kit.box(scaled([0,17.7+(variant%3)*0.19,3.05]),scaled([1.1+(variant%3)*0.38,0.27,0.15]),['#614947']))
     head.add(kit.box(scaled([variant%2?1.42:-1.52,22.8,-0.97]),scaled([3.2,1.6+variant*0.10,3.3]),[hair]))
   }
-  const headwear = appearance.headwear ?? (hat ? 'straw' : 'none')
-  if (headwear === 'straw') {
-    head.add(kit.box(scaled([0, 22.25, 0.35]), scaled([9.5, 0.9, 8.5]), [HAT]))
-    head.add(kit.box(scaled([0, 23.45, 0]), scaled([7.25, 1.45, 6.3]), [HAT_BAND]))
-    head.add(kit.box(scaled([0, 24.15, 0]), scaled([6.65, 1.03, 5.75]), [HAT]))
-  } else if (headwear === 'cap') {
-    head.add(kit.box(scaled([0, 22.9, 0]), scaled([7.6, 2.1, 6.8]), ['#5d5a52']))
-    head.add(kit.box(scaled([0, 22.5, 3.4]), scaled([7.9, 0.55, 2.2]), ['#4e4b45']))
-  } else if (headwear === 'bandana') {
-    head.add(kit.box(scaled([0, 21.7, 0]), scaled([7.7, 1.5, 6.8]), ['#a2544c']))
-    head.add(kit.box(scaled([0, 21.1, -3.05]), scaled([2.0, 1.6, 1.4]), ['#8d453f']))
-  }
+  addHeadwear(head, kit, appearance)
   return head
 }
 
@@ -90,6 +113,19 @@ function makeGroundShadow() {
   return shadow
 }
 
+// 斜挎的缆绳：从左肩绕到右胯，胯边再盘一圈，是船上人的身份标识。
+function addRopeSling(body: T.Group, kit: ModelKit, color: string) {
+  for (let index = 0; index <= 5; index++) {
+    const t = index / 5
+    body.add(kit.box(scaled([-2.55 + t * 5.0, 15.5 - t * 5.9, 2.06]), scaled([0.72, 0.72, 0.36]), [color]))
+  }
+  for (let index = 0; index < 8; index++) {
+    const angle = index / 8 * Math.PI * 2
+    body.add(kit.box(scaled([2.15 + Math.cos(angle) * 0.62, 9.5 + Math.sin(angle) * 0.62, 1.95]),
+      scaled([0.62, 0.62, 0.42]), [color]))
+  }
+}
+
 function dressAvatar(body: T.Group, kit: ModelKit, appearance: Appearance) {
   const hem = new T.Group()
   if (appearance.traveler) {
@@ -106,6 +142,7 @@ function dressAvatar(body: T.Group, kit: ModelKit, appearance: Appearance) {
     body.add(kit.box(scaled([x,12.95,-2.17]),scaled([4.45,4.68,1.99]),['#816c4d']))
     body.add(kit.box(scaled([x,14.38,-3.23]),scaled([4.33,1.24,0.32]),['#b39561']))
   }
+  if (appearance.rope) addRopeSling(body, kit, appearance.rope.color)
   return hem
 }
 
@@ -131,6 +168,8 @@ export function createHarborAvatar(kit: ModelKit, appearance: Appearance = AVATA
     avatar,
     detailAnchor: body,
     head,
+    // 右手：鱼竿之类要"握在手里"的东西挂在这上面，手臂怎么摆它就怎么跟着
+    rightArm,
     setFishingArm(angle?:number) { fishingArm = angle },
     swingCoat(angle: number) { hem.rotation.x = angle },
     wave(amount: number) { rightArm.rotation.z = amount },

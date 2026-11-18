@@ -25,7 +25,7 @@ export const PLACE_LABELS = {
     [FISHING.place.id]: { title:FISHING.title, iconType:'landmark', anchor:FISHING.anchor, blurb:FISHING.blurb },
     [WISHING.place.id]: { title:WISHING.title, iconType:'landmark', anchor:WISHING.anchor, blurb:WISHING.blurb },
     portfolio: { title: '作品船', iconType: 'artwork', anchor: [4.8, 2.25, -2.06], blurb: '浏览渔港作品集' },
-    notice: { title: '展览公告栏', iconType: 'landmark', anchor: [-15.8, 2.85, -1.9], blurb: '查看渔港展览公告' },
+    notice: { title: '展览公告栏', iconType: 'landmark', anchor: [-22.57, 2.85, 4.54], blurb: '查看渔港展览公告' },
     eval: { title: '评测站', iconType: 'evaluation', anchor: [-10.8, 3.45, 15.8], blurb: '查看工作台演示与报告' },
     lighthouse: { title: '灯塔岬角', iconType: 'landmark', anchor: [6.7, 11.6, -21.55], blurb: '查看灯塔岬角' },
     sunrise: { title: '日出观景台', iconType: 'landmark', anchor: [15.5, 2.21, -0.7], blurb: '查看日出观景台' },
@@ -34,6 +34,10 @@ export const PLACE_LABELS = {
     [HILL.id]: { title: HILL.title, iconType: 'landmark', anchor: [HILL.position.x, 1.70+hillElevation(HILL.position.x,HILL.position.z),HILL.position.z], blurb: HILL.caption },
     captain: { title: CAPTAIN.title, iconType: 'landmark', anchor: CAPTAIN.anchor, blurb: CAPTAIN.note || CAPTAIN.placeholder },
     'upper-village': { title: VILLAGE.title, iconType: 'landmark', anchor: [9.62, 2.90, 23.65], blurb: VILLAGE.note },
+    // 三个停靠点也挂上悬浮名牌（锚点取靠岸点上方 2.4 米），靠近时显示码头名。
+    'south-dock': { title: '南湾码头', iconType: 'landmark', anchor: [-0.3, 2.4, 11.42], blurb: '在此上船或靠岸' },
+    'pier-dock': { title: '栈桥泊位', iconType: 'landmark', anchor: [-4.55, 2.4, -1.70], blurb: '在此上船或靠岸' },
+    'east-dock': { title: '东堤码头', iconType: 'landmark', anchor: [16.45, 2.4, 19.39], blurb: '在此上船或靠岸' },
   },
 } as const
 

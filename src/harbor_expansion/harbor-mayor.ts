@@ -1,20 +1,26 @@
 import * as T from 'three'
 import { createHarborAvatar } from '../pixel_harbor/harbor_avatar'
 import { DECK, groundElevation } from '../pixel_harbor/harbor_terrain'
-import { makeCanvas, pixelTexture } from '../pixel_harbor/harbor_materials'
+import { canWalkAt } from '../pixel_harbor/harbor_layout'
+import type { WorldObstacle } from '../pixel_harbor/harbor_layout'
+import { nameplate, NAMEPLATE } from '../pixel_harbor/harbor_nameplate'
 import type { ModelKit, Paint } from '../pixel_harbor/harbor_models'
 import type { HarborPlayer } from '../pixel_harbor/harbor_player_motion'
 import { dampAngle, dampingFactor } from '../pixel_harbor/harbor_damping'
 
 export const MAYOR_NPC = {
-  // 村长小屋门前的一圈踱步路线
+  // 只在屋子**东侧（门前）**来回踱步：两个端点，走到头停一下再折返。
+  // 屋子范围 x −26.9~−22.5，路线全在 x ≈ −21.2 上，离墙 1.2 米，绝不会走到房子后面。
   route: [
-    [-22.15, 0.55], [-21.10, 2.60], [-24.60, 3.40],
-    [-26.30, 1.20], [-25.40, -3.60], [-23.20, -4.40],
+    [-21.30, -3.90], [-21.10, 2.90],
   ] as const,
-  // 回屋目标点：屋子东墙外，走到这里就算进门
-  door: { x: -22.35, z: -2.9 },
-  walkSpeed: 0.52,
+  // 回屋目标点：屋子东墙外，走到这里就算进门（离墙 0.35 米，碰撞半径 0.26 才过得去）
+  door: { x: -22.15, z: -2.9 },
+  // 从屋子西侧回去时先绕到这个点（屋子东南角外侧），否则直线会穿屋。
+  doorApproach: { x: -21.90, z: 0.20 },
+  // 步速：原来 2.1 略快，降 1/3 到 1.4，摆腿约 14°。
+  walkSpeed: 1.4,
+  radius: 0.26,
   restYaw: Math.PI / 2,
   nightFrom: 0.55,
   rainFrom: 0.35,
@@ -69,26 +75,7 @@ function buildChair(kit: ModelKit) {
   return chair
 }
 
-/** 门口木牌：把文字画成贴图贴在墙上，和村长小屋的门牌同样做法 */
-function addHouseSign(scene: T.Scene, kit: ModelKit, text: string, x: number, y: number, z: number) {
-  const { canvas, context } = makeCanvas(256, 64)
-  context.fillStyle = '#5b4632'
-  context.fillRect(0, 0, canvas.width, canvas.height)
-  context.fillStyle = '#f2e6cf'
-  context.font = 'bold 34px "Microsoft YaHei", sans-serif'
-  context.textAlign = 'center'
-  context.textBaseline = 'middle'
-  context.fillText(text, canvas.width / 2, canvas.height / 2 + 2)
-  const board = new T.Mesh(
-    new T.PlaneGeometry(1.5, 0.375),
-    new T.MeshBasicMaterial({ map: pixelTexture(canvas) }),
-  )
-  board.position.set(x, y, z)
-  scene.add(board)
-  scene.add(kit.box([x, y, z - 0.03], [1.64, 0.48, 0.06], ['#4a3626']))
-}
-
-export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
+export function addHarborMayor(scene: T.Scene, kit: ModelKit, obstacles: readonly WorldObstacle[]) {
   const actor = createHarborAvatar(kit, {
     hair: '#cdc6bd', skin: '#d9b394', shirt: '#4d5a68', trousers: '#3d454e',
     hat: false, headwear: 'bandana',
@@ -96,12 +83,10 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   addPipe(kit, actor.head)
   scene.add(actor.avatar)
 
-  // 守塔人小屋门口的门牌（北墙，正对海港）
-  addHouseSign(scene, kit, '守塔人小屋', -8.0, DECK + 2.15, -19.04)
+  // 守塔人小屋门牌：挂在门上方那面南墙（房子在灯塔西侧，门朝 +z），和村长小屋同一套棕底米白字
+  scene.add(nameplate('守塔人小屋', [-2.69, DECK + NAMEPLATE.mountHeight, -19.15], 0))
 
-  // 小屋前的空地铺一层草地
-  const lawn = kit.box([-23.8, DECK + 0.015, -3.0], [12.4, 0.05, 13.6], ['#8ca06a', 'grass'])
-  scene.add(lawn)
+  // 小屋前的空地不再单独铺一层草：西岸整片地面本身就是草地，再叠一层会露出色差。
 
   const chair = buildChair(kit)
   chair.rotation.order = 'YXZ'
@@ -122,18 +107,21 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   let indoors = false
   let pause = 0
 
-  return (night: number, rain: number, step: number, reduced: boolean) => {
+  function update(night: number, rain: number, step: number, reduced: boolean) {
     // 空椅子也轻轻晃，看起来像有人在刚起身
     chairTime += step
     chair.rotation.x = Math.sin(chairTime * 1.1) * 0.045
     const retreat = night > MAYOR_NPC.nightFrom || rain > MAYOR_NPC.rainFrom
 
     if (retreat && !indoors) {
-      // 往屋里走，到了就隐藏
-      const dx = MAYOR_NPC.door.x - pose.x
-      const dz = MAYOR_NPC.door.z - pose.z
+      // 往屋里走，到了就隐藏。人在屋子西侧时先绕到屋前，免得直线穿墙。
+      const approach = MAYOR_NPC.doorApproach
+      const target = pose.x < -22.2 && Math.hypot(approach.x - pose.x, approach.z - pose.z) > 0.5
+        ? approach : MAYOR_NPC.door
+      const dx = target.x - pose.x
+      const dz = target.z - pose.z
       const distance = Math.hypot(dx, dz)
-      if (distance < MAYOR_NPC.hideDistance) {
+      if (distance < MAYOR_NPC.hideDistance && target === MAYOR_NPC.door) {
         indoors = true
         actor.avatar.visible = false
       } else {
@@ -161,8 +149,10 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
         waypoint = (waypoint + 1) % MAYOR_NPC.route.length
         pause = 1.2 + Math.random() * 1.6
         pose.speed = 0
-      } else {
-        walk(dx, dz, distance, step)
+      } else if (!walk(dx, dz, distance, step)) {
+        // 被挡住（比如走到牌子/椅子边上）：等一会儿就直接换下一个点，免得卡死。
+        pause = 0.8
+        waypoint = (waypoint + 1) % MAYOR_NPC.route.length
       }
     }
 
@@ -172,11 +162,21 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
 
     function walk(dx: number, dz: number, distance: number, delta: number) {
       const pace = Math.min(MAYOR_NPC.walkSpeed * delta, distance)
-      pose.x += dx / distance * pace
-      pose.z += dz / distance * pace
+      const nextX = pose.x + dx / distance * pace
+      const nextZ = pose.z + dz / distance * pace
+      // 走之前先问一句能不能站：房子的碰撞盒在障碍表里，这样他就不会走进屋里去。
+      if (!canWalkAt(nextX, nextZ, { obstacles, height: 0, radius: MAYOR_NPC.radius })) {
+        pose.speed = 0
+        return false
+      }
+      pose.x = nextX
+      pose.z = nextZ
       pose.facing = dampAngle(pose.facing, Math.atan2(dx, dz), dampingFactor(delta, 0.22))
       pose.speed = MAYOR_NPC.walkSpeed
+      return true
     }
   }
+  // pose 是村长此刻站的位置，avatar 用来判断他是不是已经进屋了。
+  return { update, pose, avatar: actor.avatar }
 }
 

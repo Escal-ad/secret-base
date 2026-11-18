@@ -17,24 +17,35 @@ export const SAILING = {
   collisionDiscs: [[-1.36, 0.76], [0, 0.80], [1.55, 0.69]],
   berthRadius: 2.1,
   boardingRadius: 1.55,
+  // 玩家上船后的站位：height 是脚底离 DECK 的高度（要踩在甲板顶面上），
+  // offset 是沿船头方向的位置（负值往船尾），避开车舱。
   helmHeight: 0.05,
+  helm: {
+    skiff: { height: 0.05, offset: 0 },
+    // 游艇中间挖了驾驶舱：舱底顶面在船体局部 0.56、船体整体 y 0.03 → 世界 0.59，
+    // 比 DECK 低 6 厘米，所以高度是负的。站位在舱底、驾驶台后面一点。
+    yacht: { height: -0.06, offset: 0.25 },
+  } as Record<string, { height: number; offset: number }>,
   wakeLimit: 14,
   wakeLife: 0.85,
   wakeInterval: 0.11,
   wakeColor: '#a2cfcb',
   wakeMinimumSpeed: 0.62,
   docks: [
-    { id: 'south-dock', title: '南湾码头', note: '绿船初始停泊处。', x: -0.3, z: 8.8,
+    { id: 'south-dock', title: '南湾码头', note: '绿船初始停泊处。', boat: 'skiff', x: -0.3, z: 8.8,
       yaw: Math.PI / 2 + 0.13, land: { x: -0.3, z: 11.42 }, berthRadius: 2.1 },
-    { id: 'pier-dock', title: '栈桥泊位', note: '绿船可在此靠泊。', x: -4.55, z: -5.15,
+    { id: 'pier-dock', title: '栈桥泊位', note: '绿船可在此靠泊。', boat: 'skiff', x: -4.55, z: -5.15,
       yaw: Math.PI / 2, land: { x: -4.55, z: -1.70 }, berthRadius: 2.1 },
     // 东堤是 11.6 米长的石堤，泊位只有一个点，所以靠岸半径必须放得比其它码头大，
-    // 否则沿堤停船时永远够不到 2.1 米的范围。
+    // 否则沿堤停船时永远够不到 2.1 米的范围。泊位放在堤**南**侧、正对靠岸点 (16.45, 19.39)，
+    // 船就停在玩家上下船的这一边。
     { id: 'east-dock', title: '东堤码头', note: '南湾东侧的石堤，可在此靠岸与上下船。',
-      x: 16, z: 15.35, yaw: Math.PI / 2 - 0.06, land: { x: 16.45, z: 19.39 }, berthRadius: 5.6 },
+      boat: 'yacht', x: 16.45, z: 21.3, yaw: Math.PI / 2 - 0.06, land: { x: 16.45, z: 19.39 }, berthRadius: 5.6 },
   ],
   boardLabel: '上船',
   dockLabel: '下船',
+  // 船不在本泊位时，船夫的"自己开船 / 导览"就开不了。
+  noBoatLabel: '船不在这个码头，先把船开回来。',
   requiredLabel: '需乘船前往',
 } as const
 

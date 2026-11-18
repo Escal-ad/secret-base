@@ -5,7 +5,8 @@ import { groundElevation } from './harbor_terrain'
 import type { Footprint } from './harbor_layout'
 import { seededRandom } from './harbor_materials'
 import { markHarborGlow } from './harbor_glow'
-import { createModelKit, makeBoat, makeHouse, makeLighthouse } from './harbor_models'
+import { nameplate, NAMEPLATE } from './harbor_nameplate'
+import { createModelKit, makeBoat, makeHouse, makeLighthouse, makeYacht } from './harbor_models'
 import type { ModelKit, Paint, Point } from './harbor_models'
 import { TERRACE_HOUSES, TERRACE_TRUNKS, VILLAGE_TERRACES } from './harbor_village_plan'
 import { VILLAGE } from './harbor_exploration_config'
@@ -18,9 +19,11 @@ const STONE: Paint = ['#ad9e8d', 'brick']
 const ROPE: Paint = ['#ceb28a']
 const POST_STEP = 2.65
 
-function pierPosts([start, end, left, right]: Footprint): [number, number][] {
+function pierPosts([start, end, left, right]: Footprint, skip = 0): [number, number][] {
   const posts: [number, number][] = []
-  for (let x = start + 0.35; x < end; x += POST_STEP) {
+  let index = 0
+  for (let x = start + 0.35; x < end; x += POST_STEP, index++) {
+    if (index < skip) continue
     posts.push([x, left + 0.10], [x, right - 0.10])
   }
   return posts
@@ -32,14 +35,19 @@ function slab(kit: ModelKit, area: Footprint, paint: Paint) {
     [maxX - minX, 0.96, maxZ - minZ], paint)
 }
 
-function addPier(group: T.Group, kit: ModelKit, area: Footprint) {
+function addPier(group: T.Group, kit: ModelKit, options: {
+  area: Footprint; deckFrom?: number; postSkip?: number
+}) {
+  const area = options.area
   const [start, end, left, right] = area
+  // 桥面可以从 area 的起点往内收（栈桥西端要压在西岸岸线上，不能铺到草地底下重合）。
+  const deckStart = options.deckFrom ?? start
   const random = seededRandom(113)
   const centerZ = (left + right) / 2
-  const plankCount = Math.ceil((end - start) / 0.37)
-  const plankWidth = (end - start) / plankCount
+  const plankCount = Math.ceil((end - deckStart) / 0.37)
+  const plankWidth = (end - deckStart) / plankCount
   for (let index = 0; index < plankCount; index++) {
-    const x = start + (index + 0.5) * plankWidth
+    const x = deckStart + (index + 0.5) * plankWidth
     const color = ['#a07655', '#b48b65', '#ba916b', '#a57b5c'][Math.floor(random() * 4)]
     const split = centerZ + (index % 3 - 1) * 0.62
     for (const [from, to] of [[left, split], [split + 0.023, right]]) {
@@ -47,9 +55,9 @@ function addPier(group: T.Group, kit: ModelKit, area: Footprint) {
     }
   }
   for (const z of [left + 0.10, right - 0.10]) {
-    group.add(kit.box([(start + end) / 2, 0.44, z], [end - start, 0.24, 0.20], TIMBER))
+    group.add(kit.box([(deckStart + end) / 2, 0.44, z], [end - deckStart, 0.24, 0.20], TIMBER))
   }
-  for (const [x, z] of pierPosts(area)) {
+  for (const [x, z] of pierPosts(area, options.postSkip)) {
     group.add(kit.box([x, 0.34, z], [0.31, 1.91, 0.33], TIMBER))
     group.add(kit.box([x, 0.96, z], [0.345, 0.15, 0.36], ROPE))
     group.add(kit.box([x, 1.31, z], [0.35, 0.09, 0.36], ['#91674c', 'wood']))
@@ -91,16 +99,23 @@ function addBuoy(group: T.Group, kit: ModelKit, [x, y, z]: Point, color: string)
 
 function addShore(group: T.Group, kit: ModelKit) {
   const random = seededRandom(251)
-  group.add(slab(kit, WEST_BANK, ['#c3a983', 'grass']))
-  group.add(slab(kit, HEADLAND, ['#91a079', 'grass']))
+  group.add(slab(kit, WEST_BANK, ['#8ca06a', 'grass']))
+  // 岬角拆成两块：西岸已经盖住的 x −17~−12 / z −21~−12 不再铺，否则两块地面同高共面会互相闪。
+  group.add(slab(kit, [HEADLAND[0], WEST_BANK[1], HEADLAND[2], WEST_BANK[2]], ['#8ca06a', 'grass']))
+  group.add(slab(kit, [WEST_BANK[1], HEADLAND[1], HEADLAND[2], HEADLAND[3]], ['#8ca06a', 'grass']))
   group.add(slab(kit, SOUTH_QUAY, STONE))
   group.add(slab(kit, [10.4, 22, 16.1, 19.9], STONE))
   group.add(kit.box([-10, DECK - 0.012, 12.2], [31, 0.026, 2.4], ['#c7b299', 'brick']))
-  group.add(kit.box([-14, DECK - 0.012, -13.1], [3.7, 0.025, 10.1], ['#c8b591', 'brick']))
   for (let index = 0; index < 18; index++) {
-    addRock(group, kit, [-13 + index * 1.21, 0.18, -11.7 + random() * 0.26],
-      [0.54 + random() * 0.44, 0.48 + random() * 0.75, 0.64])
-    addRock(group, kit, [11.4 + index * 0.66, 0.12, 15.95], [0.55, 0.57, 0.62])
+    // 西岸那排礁石从岸线（x = -12）外侧起步：最西那块原本整块躺在草地上，像嵌进了陆地。
+    // 随机值照常取，只是不放第一块，避免后面的石头尺寸全部错位。
+    // 西岸那排礁石从沙滩外侧起步：前两块不是压在草地上就是压在沙地上，都去掉。
+    const rockX = -13 + index * 1.21
+    const rockZ = -11.7 + random() * 0.26
+    const rockSize: Point = [0.54 + random() * 0.44, 0.48 + random() * 0.75, 0.64]
+    if (index > 1) addRock(group, kit, [rockX, 0.18, rockZ], rockSize)
+    // 东堤北缘这排礁石要收在堤身之内（x ≤ 22），否则最后一块会从堤角斜着探出去。
+    addRock(group, kit, [11.4 + index * 0.58, 0.12, 15.95], [0.55, 0.57, 0.62])
   }
   for (let index = 0; index < 16; index++) {
     addRock(group, kit, [8.25 + random(), 0.23, -12.4 - index * 0.83], [0.67, 0.74, 0.69])
@@ -126,11 +141,27 @@ function placeHouse(group: T.Group, kit: ModelKit, options: { position: Point; s
   group.add(house)
 }
 
+// 村口民居统一尺寸：和村长小屋同规格（4.4 × 2.43 × 4，屋顶可站高度 3.9）。
+const HOUSE_SIZE: Point = [4.4, 2.43, 4]
+const COTTAGES: { position: Point; color: number; name: string }[] = [
+  { position: [-3, DECK, 17.5], color: 0, name: '船夫小屋' },
+  { position: [6, DECK, 19.2], color: 3, name: '渔民小屋' },
+]
+
+// 民居挂门牌：正门（-z 面）上方，和村长小屋、守塔人小屋同一套棕底米白字。
+function addCottages(group: T.Group, kit: ModelKit) {
+  for (const { position, color, name } of COTTAGES) {
+    placeHouse(group, kit, { position, size: HOUSE_SIZE, color })
+    group.add(nameplate(name, [position[0], DECK + NAMEPLATE.mountHeight,
+      position[2] - HOUSE_SIZE[2] / 2 - 0.06], Math.PI))
+  }
+}
+
 function addVillage(group: T.Group, kit: ModelKit) {
-  placeHouse(group, kit, { position: [-3, DECK, 17.5], size: [6.3, 3.05, 4.4], color: 0 })
-  placeHouse(group, kit, { position: [6, DECK, 19.2], size: [3.9, 2.55, 4.1], color: 3 })
-  placeHouse(group, kit, { position: [-8, DECK, -21], size: [4.7, 2.6, 3.7], color: 2, yaw: Math.PI })
-  placeHouse(group, kit, { position: [-24.7, DECK, -3], size: [4.4, 2.43, 4], color: 1, yaw: -Math.PI / 2 })
+  addCottages(group, kit)
+  // 守塔人小屋：从岬角西侧 (-8,-21) 往东挪到灯塔附近 (-2.69,-21.21)，门仍朝 +z（朝港口）。
+  placeHouse(group, kit, { position: [-2.69, DECK, -21.21], size: HOUSE_SIZE, color: 2, yaw: Math.PI })
+  placeHouse(group, kit, { position: [-24.7, DECK, -3], size: HOUSE_SIZE, color: 1, yaw: -Math.PI / 2 })
   for (const { tier, y, z, lots } of VILLAGE_TERRACES) {
     group.add(kit.box([-9, y - 2.4, z + 10], [39 - tier * 2.8, 4.8, 21], ['#8a9b76', 'grass']))
     const span = tier === 0 ? VILLAGE.ramp[0] + 28 : 38 - tier * 2.8
@@ -159,35 +190,51 @@ function addNetRack(group: T.Group, kit: ModelKit) {
     group.add(kit.box([x, 1.30 + row * 0.17, z], [2.29, 0.025, 0.026], ['#93a291']))
   }
   for (const offset of [-0.82, 0.55, 0.98]) addBuoy(group, kit, [x + offset, 1.29, z], '#c58d58')
+  // 救生圈：用 8 段木条拼成圆环，挂在横梁下面。
+  // 网面在 z = 14.30（网线厚 0.023，前表面 14.2885），圈整体前移到 z − 0.09，
+  // 前后留 4 厘米间隙，不会扎进网里；下端 1.58 也高于两侧浮球的顶（1.52）。
+  const ringX = 2.86
+  const ringY = 1.86
+  const ringZ = z - 0.09
+  for (let index = 0; index < 8; index += 1) {
+    const angle = index * Math.PI / 4
+    const segment = kit.box(
+      [ringX + Math.cos(angle) * 0.28, ringY + Math.sin(angle) * 0.28, ringZ],
+      [0.215, 0.075, 0.07],
+      index % 2 ? ['#efe6d4'] : ['#c0553f'],
+    )
+    segment.rotation.z = angle + Math.PI / 2
+    group.add(segment)
+  }
+  // 挂带：从横梁下缘斜拉到圈顶，两端都是接上的
+  group.add(kit.beam([[ringX, 2.28, z - 0.01], [ringX, ringY + 0.31, ringZ]], 0.035, ['#7a6a52']))
 }
 
 function addDockProps(group: T.Group, kit: ModelKit) {
   addNetRack(group, kit)
-  for (const [x, z] of [[-1.2, 2.34], [-1.2, -2.34], [9, -2.34], [16.4, 2.69], [-13.4, -14.9], [-10.5, 13.4]]) {
+  for (const [x, z] of [[-1.2, 2.34], [-1.2, -2.34], [9, 2.34], [9, -2.34]]) {
     addLantern(group, kit, [x, DECK, z])
   }
-  for (const [x, z] of [[-8, -2.05], [13.8, 3.12], [0, 12.2], [-6.9, 15.9], [-21, 2.6]]) {
+  // 木箱与木桶只留在村里的地面上；栈桥与登陆点桥面上的一律不再摆（只留路灯、小猫和护栏）。
+  for (const [x, z] of [[0, 12.2], [-6.9, 15.9]]) {
     group.add(kit.box([x, 0.91, z], [0.65, 0.52, 0.61], ['#bc8a59', 'wood']))
     group.add(kit.box([x, 1.19, z], [0.68, 0.08, 0.64], TIMBER))
     addBuoy(group, kit, [x - 0.46, 0.81, z], '#bd6951')
   }
-  for (const [x, z] of [[0.6, 2.23], [11.9, 2.95], [-16, 9.1]]) {
+  for (const [x, z] of [[-16, 9.1]]) {
     group.add(kit.cylinder([x, 0.99, z], [0.35, 0.31, 0.68, 9], TIMBER))
     for (const y of [0.78, 1.18]) group.add(kit.cylinder([x, y, z], [0.355, 0.355, 0.08, 9], ['#69645c']))
   }
-  const coil = new T.Mesh(new T.TorusGeometry(0.28, 0.048, 4, 12), kit.surface(...ROPE))
-  coil.rotation.x = -Math.PI / 2
-  coil.position.set(1.8, DECK + 0.055, -1.6)
-  group.add(coil)
-  group.add(kit.beam([[3.22, 1.02, -2.45], [4.54, 0.67, -4.45]], 0.034, ROPE))
+  // 栈桥桥面上不再摆任何杂物：箱、桶、缆绳盘、垂到水面的缆绳都已移除。
 }
 
 
 function addWestCoast(group: T.Group, kit: ModelKit) {
   const sand: Paint = ['#c1a784', 'grass']
-  for (const [z, length] of [[-7.2, 9.4], [6.8, 8.1]]) {
-    group.add(kit.box([-11.74, 0.14, z], [1.15, 0.39, length], sand))
-    group.add(kit.box([-12.05, 0.27, z], [0.92, 0.43, length - 1.4], sand))
+  // 岸边沙滩：贴着草地边缘铺一层齐平的沙（比地面低 2 厘米），两侧都铺满到岸线尽头，
+  // 中间让开栈桥。原来是两块高低不一的短板，靠岸处露出一截草壁、远处又断掉。
+  for (const [from, to] of [[-21, -2.6], [2.6, 11]]) {
+    group.add(kit.box([-11.8, DECK - 0.02 - 0.2, (from + to) / 2], [1.2, 0.4, to - from], sand))
   }
 }
 
@@ -231,21 +278,31 @@ function addBoats(scene: T.Scene, kit: ModelKit) {
     boat.position.set(point[0], point[1], point[2])
     boat.rotation.y = yaw
     boat.scale.setScalar(size)
+    // 船会自己开走，不进地形高度图；否则船上会留一块能站的隐形地面。
+    boat.traverse(object => { object.raycast = () => {} })
     scene.add(boat)
     return boat
   })
   // Look the sailable boat up by id rather than array position, so removing entries stays safe.
   const vessel = built[boats.findIndex(boat => boat.id === BOAT_VESSEL_ID)] ?? built[0]
-  return { boats: built, vessel, bases: boats.map(boat => boat.point) }
+  // 东堤那艘游艇：停在堤南侧、正对靠岸点，玩家可以自己开。船头朝 +x，朝向按 yaw − HULL_AXIS(π/2) 摆。
+  const yacht = makeYacht(kit)
+  yacht.name = 'harbor-yacht'
+  yacht.position.set(16.45, 0.03, 21.3)
+  yacht.rotation.y = -0.06
+  yacht.traverse(object => { object.raycast = () => {} })
+  scene.add(yacht)
+  return { boats: built, vessel, yacht, bases: boats.map(boat => boat.point) }
 }
 
 // 塔底门廊已移除：灯塔门前恢复原来的空地。
 
 export const HARBOR_STRUCTURES = [
   { footprint: [5.15, 8.25, -23.1, -20.0], height: 10.4 },
-  { footprint: [-10.4, -5.6, -22.9, -19.1], height: 4.3 },
-  { footprint: [-6.2, 0.2, 15.2, 19.8], height: 5.2 },
-  { footprint: [4, 8, 17.1, 21.3], height: 3.9 },
+  // 四栋同规格民居：都是 4.4 × 4 的水平投影，屋顶可站高度统一 3.9（碰撞盒加 0.05 余量）
+  { footprint: [-4.94, -0.44, -23.26, -19.16], height: 3.9 },
+  { footprint: [-5.25, -0.75, 15.45, 19.55], height: 3.9 },
+  { footprint: [3.75, 8.25, 17.15, 21.25], height: 3.9 },
   { footprint: [-26.9, -22.5, -5.3, -0.7], height: 3.9 },
 ] satisfies { footprint: Footprint; height: number }[]
 
@@ -259,11 +316,11 @@ export const WORLD_OBSTACLES: Footprint[] = [
   ...TERRACE_TRUNKS,
   ...HILL_OBSTACLES,
   [-30, VILLAGE.ramp[0], 22.74, 23.29], [-30, -25, -21, -12.32], [-30,-25,-8.38,22], [1.7, 4.3, 14.16, 14.44],
-  [-8.8, -7.67, -2.39, -1.73], [13.02, 14.15, 2.8, 3.45],
-  [-0.78, 0.35, 11.87, 12.53], [-7.7, -6.56, 15.57, 16.23], [-21.8, -20.66, 2.27, 2.93],
+  // 只保留还在的两只木箱（(0, 12.2) 与 (-6.9, 15.9)）的碰撞盒；
+  // 其余三只箱子（栈桥上两只、村长小屋旁一只）已删除，盒子也一并去掉，免得留隐形墙。
+  [-0.78, 0.35, 11.87, 12.53], [-7.7, -6.56, 15.57, 16.23],
   [0.24, 0.96, 1.87, 2.55], [11.54, 12.26, 2.59, 3.31], [-16.36, -15.64, 8.74, 9.46],
-  [-1.29, -1.11, 2.27, 2.43], [8.91, 9.09, -2.43, -2.27], [16.32, 16.48, 2.61, 2.77],
-  [-13.48, -13.32, -14.98, -14.82], [-10.58, -10.42, 13.32, 13.48],
+  [-1.29, -1.11, 2.27, 2.43], [8.91, 9.09, 2.27, 2.43], [8.91, 9.09, -2.43, -2.27],
   [-21.71, -21.49, -11.11, -10.89], [-21.71, -21.49, -4.01, -3.79], [-21.71, -21.49, 3.09, 3.31],
 ]
 
@@ -279,28 +336,16 @@ function getFlightVolumes(world: T.Group) {
   return volumes
 }
 
-for (const [x, z] of [...pierPosts(PIER), ...pierPosts(LANDING)]) {
+for (const [x, z] of [...pierPosts(PIER, 1), ...pierPosts(LANDING)]) {
   WORLD_OBSTACLES.push([x - 0.18, x + 0.18, z - 0.18, z + 0.18])
 }
 
-// 东堤（石砌平台）的泊位配件：系缆桩沿北缘排布，靠水一侧加木护边。
+// 东堤（石砌平台）的泊位配件：只保留钓位的凳子和渔民脚边的鱼桶。
+// 北缘原来那排系缆桩和木护边会横穿渔民与鱼桶（z 16.23~16.45 正好压在它们身上），已移除。
 function addEastDockFittings(group: T.Group, kit: ModelKit) {
-  for (const x of [13, 16, 19]) {
-    group.add(kit.cylinder([x, DECK + 0.30, 16.62], [0.11, 0.13, 0.60, 8], ['#6d6154']))
-    group.add(kit.box([x, DECK + 0.60, 16.62], [0.26, 0.07, 0.26], ['#8a7a68']))
-  }
-  group.add(kit.box([16, DECK + 0.04, 16.34], [11.0, 0.12, 0.22], TIMBER))
   // 东堤钓位的凳子：与渔民坐的凳子同款同尺寸
   group.add(kit.cylinder([21.80, DECK + 0.22, 17.87], [0.23, 0.25, 0.42, 10], ['#8a6a4a']))
-  // 渔民脚边的装鱼木桶：桶身 + 桶箍 + 里面的水和两条鱼
-  const bucketX = 14.37, bucketZ = 16.34
-  group.add(kit.cylinder([bucketX, DECK + 0.19, bucketZ], [0.26, 0.24, 0.38, 9], ['#7b6248']))
-  for (const y of [0.10, 0.30]) {
-    group.add(kit.cylinder([bucketX, DECK + y, bucketZ], [0.27, 0.27, 0.05, 9], ['#5d4a36']))
-  }
-  group.add(kit.box([bucketX, DECK + 0.36, bucketZ], [0.40, 0.04, 0.40], ['#4d6b73']))
-  group.add(kit.box([bucketX - 0.06, DECK + 0.40, bucketZ + 0.03], [0.20, 0.07, 0.09], ['#9aa6a8']))
-  group.add(kit.box([bucketX + 0.07, DECK + 0.40, bucketZ - 0.04], [0.17, 0.06, 0.08], ['#b0bbbd']))
+  // 装鱼木桶已经挪到渔民身上（跟着他一起出现/消失），这里不再摆固定的桶。
 }
 
 // 树冠顶面：只提供站立支撑、不阻挡行走，所以 footprint 收进一点，
@@ -328,8 +373,10 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
   const staticWorld = new T.Group()
   addShore(staticWorld, kit)
   addEastDockFittings(staticWorld, kit)
-  addPier(staticWorld, kit, PIER)
-  addPier(staticWorld, kit, LANDING)
+  // 栈桥西端：桥面收到西岸岸线（x = -12）为止，再往西会和草地完全重合、渲染时互相闪；
+  // 交界处那对石墩也不放，避免桥口两边各插一根。
+  addPier(staticWorld, kit, { area: PIER, deckFrom: WEST_BANK[1], postSkip: 1 })
+  addPier(staticWorld, kit, { area: LANDING })
   addVillage(staticWorld, kit)
   addDockProps(staticWorld, kit)
   addWestCoast(staticWorld, kit)
@@ -346,7 +393,7 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
   const treeTops = collectTreeTops(staticWorld)
   batchBlocks(staticWorld)
   scene.add(staticWorld)
-  const { boats, vessel, bases } = addBoats(scene, kit)
+  const { boats, vessel, yacht, bases } = addBoats(scene, kit)
   const animate = (elapsed: number, bank: number) => {
     boats.forEach((boat, index) => {
       // 除玩家能开的绿船外，其余渔船沿小圈缓慢巡游：离港有距离，但看得见。
@@ -363,5 +410,5 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
       boat.rotation.x = Math.sin(elapsed * 0.88 + index * 0.65) * 0.045 + (boat === vessel ? bank : 0)
     })
   }
-  return { animate, vessel, flightVolumes, treeTops }
+  return { animate, vessel, yacht, flightVolumes, treeTops }
 }

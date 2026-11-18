@@ -14,7 +14,7 @@ type Page = 'entry' | 'read' | 'scene'
 function startingPage(): Page {
   const query = new URLSearchParams(location.search)
   if (query.get('mode') === 'read') return 'read'
-  // 入口页暂时跳过：默认直接进 3D 场景，方便调试。需要时加 ?entry=1 才显示入口页。
+  // 入口页按所有者决定保持跳过：默认直接进 3D 场景，不再重新设计。需要时加 ?entry=1 才显示入口页。
   if (query.get('entry') === '1') return 'entry'
   return 'scene'
 }

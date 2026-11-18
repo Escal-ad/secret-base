@@ -1,7 +1,7 @@
 import * as T from 'three'
 import { PROFILE_UI } from './harbor_profile'
 import type { Footprint } from './harbor_layout'
-import { makeCanvas, pixelTexture } from './harbor_materials'
+import { nameplate, NAMEPLATE } from './harbor_nameplate'
 import type { ModelKit, Paint } from './harbor_models'
 import { DECK, groundElevation } from './harbor_terrain'
 import { SUNSET, VILLAGE } from './harbor_exploration_config'
@@ -10,30 +10,12 @@ const TRAIL: Paint = ['#b28b63', 'wood']
 const RAIL: Paint = ['#88664e', 'wood']
 const BENCH_RADIUS = 0.56
 const RAIL_DEPTH = 0.12
-const SIGN_COLOR = '#8a694c'
-const SIGN_TEXT = '#fff0d4'
 const RAILS = [
   { x: -18, near: 23.3, far: VILLAGE.terrace[3] },
   { x: VILLAGE.terrace[1], near: 24.0, far: VILLAGE.terrace[3] },
 ]
 const RAMP_RAILS = [VILLAGE.ramp[0], VILLAGE.ramp[1]].map((x): Footprint =>
   [x - RAIL_DEPTH / 2, x + RAIL_DEPTH / 2, VILLAGE.ramp[2], VILLAGE.terrace[2]])
-
-function nameplate(text: string, position: [number, number, number], yaw: number) {
-  const { canvas, context } = makeCanvas(144, 35)
-  context.fillStyle = SIGN_COLOR
-  context.fillRect(0, 0, canvas.width, canvas.height)
-  context.fillStyle = SIGN_TEXT
-  context.textAlign = 'center'
-  context.textBaseline = 'middle'
-  context.font = 'bold 19px "Microsoft YaHei", sans-serif'
-  context.fillText(text, canvas.width / 2, canvas.height / 2)
-  const sign = new T.Mesh(new T.PlaneGeometry(1.38, 0.34),
-    new T.MeshBasicMaterial({ map: pixelTexture(canvas), side: T.DoubleSide }))
-  sign.position.set(...position)
-  sign.rotation.y = yaw
-  return sign
-}
 
 function addTrail(group: T.Group, kit: ModelKit) {
   const [left, right, start] = VILLAGE.ramp
@@ -77,7 +59,7 @@ export function addHarborLandmarks(world: T.Group, kit: ModelKit) {
   const group = new T.Group()
   addTrail(group, kit)
   addBench(group, kit)
-  group.add(nameplate(PROFILE_UI.title, [-22.57, 2.48, -3], Math.PI / 2))
+  group.add(nameplate(PROFILE_UI.title, [-22.57, DECK + NAMEPLATE.mountHeight, -3], Math.PI / 2))
   // 守塔人小屋的牌子挂在屋顶正上方，正面朝海（+z）。
   world.add(group)
 }

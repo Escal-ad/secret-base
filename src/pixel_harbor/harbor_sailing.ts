@@ -88,41 +88,80 @@ function advanceBoat(vessel: Vessel,
   }
 }
 
-export function createHarborSailing(boat: Group, player: HarborPlayer, getIce = () => 0) {
-  const vessel: Vessel = { x: boat.position.x, z: boat.position.z,
-    yaw: boat.rotation.y + HULL_AXIS, speed: 0, turn: 0, bank: 0 }
-  // Apply the heading around world Y and the bank around the hull's local +X bow axis.
-  boat.rotation.reorder('YXZ')
+export function createHarborSailing(boats: readonly { id: string; group: Group }[],
+  player: HarborPlayer, getIce = () => 0) {
+  // 每条船各有一份状态；泊位决定这次上哪条船（见 SAILING.docks[].boat）。
+  const rigs = boats.map(({ id, group }) => {
+    group.rotation.reorder('YXZ')
+    return { id, group, helm: SAILING.helm[id] ?? { height: SAILING.helmHeight, offset: 0 },
+      vessel: { x: group.position.x, z: group.position.z,
+        yaw: group.rotation.y + HULL_AXIS, speed: 0, turn: 0, bank: 0 } as Vessel }
+  })
+  let active = rigs[0]
+  const writeRig = (rig: typeof rigs[number]) => {
+    rig.group.position.x = rig.vessel.x
+    rig.group.position.z = rig.vessel.z
+    rig.group.rotation.y = rig.vessel.yaw - HULL_AXIS
+  }
   const sync = () => {
-    boat.position.x = vessel.x
-    boat.position.z = vessel.z
-    boat.rotation.y = vessel.yaw - HULL_AXIS
+    const { vessel, helm } = active
+    writeRig(active)
     if (player.sailing) Object.assign(player, {
-      x: vessel.x, z: vessel.z, facing: vessel.yaw, height: SAILING.helmHeight, speed: 0,
-      airborne: false, landing: 0,
+      x: vessel.x + Math.sin(vessel.yaw) * helm.offset,
+      z: vessel.z + Math.cos(vessel.yaw) * helm.offset,
+      facing: vessel.yaw, height: helm.height, speed: 0, airborne: false, landing: 0,
     })
   }
   function dockShip(dock: Dock) {
-    Object.assign(vessel, { x: dock.x, z: dock.z, yaw: dock.yaw, speed: 0, turn: 0, bank: 0 })
+    // 同一个泊位已经有另一条船停着：先让它回自己的本港，免得两条船叠在一起。
+    const other = rigs.find(rig => rig !== active && distance(rig.vessel, dock) <= 2.4)
+    if (other) {
+      const home = SAILING.docks.find(item => item.boat === other.id) ?? SAILING.docks[0]
+      Object.assign(other.vessel, { x: home.x, z: home.z, yaw: home.yaw, speed: 0, turn: 0, bank: 0 })
+      writeRig(other)
+    }
+    Object.assign(active.vessel, { x: dock.x, z: dock.z, yaw: dock.yaw, speed: 0, turn: 0, bank: 0 })
     sync()
   }
   return {
-    vessel,
+    get vessel(): Vessel { return active.vessel },
     nearbyDock() {
-      const dock = nearestDock(vessel)
-      if (distance(vessel, dock) > dock.berthRadius) return null
-      if (!player.sailing && distance(player, dock.land) > SAILING.boardingRadius) return null
-      return dock
+      // 开船时看船离哪个泊位够近；走路时看你在哪个泊位岸边，并且那儿真的停着一条船。
+      if (player.sailing) {
+        const dock = nearestDock(active.vessel)
+        return distance(active.vessel, dock) <= dock.berthRadius ? dock : null
+      }
+      const dock = SAILING.docks.find(item => distance(player, item.land) <= SAILING.boardingRadius)
+      if (!dock) return null
+      return rigs.some(rig => distance(rig.vessel, dock) <= dock.berthRadius) ? dock : null
     },
     toggle(dock: Dock) {
-      const wasSailing = player.sailing
-      player.sailing = !wasSailing
-      dockShip(dock)
-      return wasSailing ? dock.land : null
+      if (!player.sailing) {
+        // 只有船真的停在这个泊位才能上；船停在别处就不再自动叫过来。
+        const berthed = rigs.find(rig => distance(rig.vessel, dock) <= dock.berthRadius)
+        if (!berthed) return null
+        active = berthed
+        player.sailing = true
+        dockShip(dock)
+        return null
+      }
+      const berth = nearestDock(active.vessel)
+      player.sailing = false
+      dockShip(berth)
+      return berth.land
     },
-    respawn() { dockShip(nearestDock(vessel)) },
-    disembark() { player.sailing = false; dockShip(nearestDock(vessel)) },
-    startTour() { player.sailing = true; dockShip(SAILING.docks[0]) },
+    respawn() { dockShip(nearestDock(active.vessel)) },
+    disembark() { player.sailing = false; dockShip(nearestDock(active.vessel)) },
+    startTour() {
+      // 船夫的"自己开船 / 导览"也用这条船：它不在南湾泊位就不让开，避免把船隔空叫过来。
+      const skiff = rigs.find(rig => rig.id === 'skiff') ?? rigs[0]
+      const dock = SAILING.docks[0]
+      if (distance(skiff.vessel, dock) > dock.berthRadius) return false
+      active = skiff
+      player.sailing = true
+      dockShip(dock)
+      return true
+    },
     finishTour(dock: Dock = SAILING.docks[0]) {
       player.sailing = false
       dockShip(dock)
@@ -130,21 +169,21 @@ export function createHarborSailing(boat: Group, player: HarborPlayer, getIce = 
     },
     followRoute(point: Position & { yaw: number; speed: number }, step: number) {
       if (!canSail(point.x, point.z, point.yaw)) return false
-      updateBank(vessel, point.yaw - vessel.yaw, step)
-      Object.assign(vessel, point)
+      updateBank(active.vessel, point.yaw - active.vessel.yaw, step)
+      Object.assign(active.vessel, point)
       sync()
       return true
     },
     teleport(point: Position) {
-      if (!canSail(point.x, point.z, vessel.yaw)) return false
-      Object.assign(vessel, point, { speed: 0, turn: 0, bank: 0 })
+      if (!canSail(point.x, point.z, active.vessel.yaw)) return false
+      Object.assign(active.vessel, point, { speed: 0, turn: 0, bank: 0 })
       sync()
       return true
     },
     update(input: Position & { sprint?: boolean }, step: number) {
-      advanceBoat(vessel, input, { step, ice:getIce() })
+      advanceBoat(active.vessel, input, { step, ice:getIce() })
       sync()
     },
-    stop() { vessel.speed = 0; vessel.turn = 0; vessel.bank = 0 },
+    stop() { active.vessel.speed = 0; active.vessel.turn = 0; active.vessel.bank = 0 },
   }
 }

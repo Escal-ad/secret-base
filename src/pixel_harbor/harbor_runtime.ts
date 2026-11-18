@@ -36,7 +36,7 @@ import { createHotspotMarker } from './harbor_hotspot_marker'
 import type { HintPosition } from './harbor_hotspot_marker'
 import { artHotspot, createHotspotTracker, findHarborHotspot, isInsideHotspot, listHarborPlaces } from './harbor_hotspots'
 import type { Exhibit, Hotspot } from './harbor_hotspots'
-import { canWalkAt, DECK } from './harbor_layout'
+import { canWalkAt, DECK, followObstacle } from './harbor_layout'
 import type { Footprint, WorldObstacle } from './harbor_layout'
 import { createLabelProjection } from './harbor_label_projection'
 import type { ProjectedLabel } from './harbor_label_projection'
@@ -87,6 +87,7 @@ const PIXEL_QUALITY = { high:1, medium:0.83, low:0.65 } as const
 const EXHIBIT_CAMERA_HEIGHT = 2.45
 const MIN_RENDER_DIMENSION = 1
 const CAPTAIN_COLLISION_RADIUS = 0.26
+const ACTOR_RADIUS = 0.3
 
 function createPixelOutput(renderer: T.WebGLRenderer, getQuality: () => Settings['quality']) {
   const target = new T.WebGLRenderTarget(1, 1, {
@@ -251,7 +252,8 @@ function resolveInteraction(player: HarborPlayer, animals: ReturnType<typeof cre
 }
 
 type NavigationWorld = {
-  exhibits: readonly Exhibit[]; canvas: HTMLCanvasElement; propObstacles: Footprint[]; vessel: T.Group
+  exhibits: readonly Exhibit[]; canvas: HTMLCanvasElement; propObstacles: Footprint[]
+  vessel: T.Group; yacht: T.Group
   animals: ReturnType<typeof createHarborAnimals>; obstacles: ReturnType<typeof walkingObstacles>
   extension: SceneExtension
   pastimes: ReturnType<typeof createHarborPastimes>
@@ -266,7 +268,7 @@ function isOverLookoutRing(point: { x: number; z: number }) {
 
 // Navigation input shares one lock with panels and activities, including travel during a fade.
 function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera, world: NavigationWorld) {
-  const { exhibits, canvas, propObstacles, vessel, animals, obstacles, extension } = world
+  const { exhibits, canvas, propObstacles, yacht, animals, obstacles, extension } = world
   const { scope }=extension
   const { pastimes } = world
   const { fishing } = pastimes
@@ -287,7 +289,8 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
         : motion.swim(point)
     },
     recover: motion.respawn })
-  const sailing = createHarborSailing(vessel, player, () => extension.weather.frame.ice)
+  const sailing = createHarborSailing([{ id: 'skiff', group: world.vessel }, { id: 'yacht', group: yacht }],
+    player, () => extension.weather.frame.ice)
   const orbit = createOrbitCamera(camera, cameraObstacles)
   const first = createFirstCamera(camera)
   const places = listHarborPlaces(exhibits)
@@ -310,7 +313,14 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     if(activity.mode)return null
     const nearby = resolveInteraction(player, animals, exhibits)
     if (nearby?.kind === 'fishing' || nearby?.kind === 'wishing') return nearby
-    return extension.gulls.hotspot(player) ?? extension.residents.hotspot(player) ?? nearby
+    const special = extension.gulls.hotspot(player) ?? extension.residents.hotspot(player)
+    if (special) return special
+    if (nearby && nearby.kind !== 'landmark') return nearby
+    // 站在码头岸上：按 E 上船（泊位决定哪条船）。
+    const berth = sailing.nearbyDock()
+    if (berth) return { kind: 'dock', id: berth.id, label: SAILING.boardLabel,
+      x: berth.land.x, z: berth.land.z, radius: SAILING.boardingRadius } satisfies Hotspot
+    return nearby
   }
   function startFishing() {
     const { x, z } = FISHING.place
@@ -340,7 +350,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
       void scope.open().catch(()=>options.onQuality('望远镜细节暂不可用。'))
       return
     }
-    if (hotspot.kind==='dock'){options.onActivityRequest('dock');return}
+    if (hotspot.kind==='dock'){options.onActivityRequest(player.sailing?'dock':'board');return}
     if (hotspot.kind==='chair') {
       const person = motion.player
       if (person.sitting) {
@@ -486,8 +496,10 @@ function createSceneFrame(options: RuntimeOptions, view: {
   animals: ReturnType<typeof createHarborAnimals>; forest: ReturnType<typeof addHarborForest>
   mayor: ReturnType<typeof addHarborMayor>
   extension: SceneExtension
+  /** NPC 走完这一步后，把各自的碰撞盒挪过去 */
+  syncActors: () => void
 }) {
-  const { session, avatar, animate, animals, forest, extension, mayor } = frame
+  const { session, avatar, animate, animals, forest, extension, mayor, syncActors } = frame
   const { player, tracker, places, cameraObstacles, sailing, activity, flight, pastimes } = session
   const { scene, camera, output, canvas } = view
   const marker = createHotspotMarker(scene)
@@ -530,11 +542,15 @@ function createSceneFrame(options: RuntimeOptions, view: {
       reduced,weather:prefs.weather })
     avatar(player, { fishingArm, settings: prefs, rain: weather.rain, first: first.blend, seconds: step, reduced,
       simplified: !quality.flags.cloth, yaw: first.yaw, flying: flight.active, bank: flight.bank })
-    extension.residents.update(player,step,{night,rain:weather.rain,reduced,limit:low?3:!quality.flags.residents?4:Infinity})
-    mayor(night, weather.rain, step, reduced)
+    extension.residents.update(player,step,{night,rain:weather.rain,snow:weather.snow,reduced,
+      limit:low?3:!quality.flags.residents?4:Infinity})
+    mayor.update(night, weather.rain, step, reduced)
+    syncActors()
     extension.gulls.update(player,{time:motionTime,step,rain:weather.rain,snow:weather.snow,night,reduced,low:low||!quality.flags.gulls},
       distance=>options.play('gull',{distance}))
     extension.islands.update(motionTime,{weather:storm,tier:low?3:quality.tier})
+    extension.seaLife.update(motionTime, { reduced: reduced || low })
+    extension.chimney.update(step, reduced || low)
     extension.ambience(player, { mode: activity.mode, speed: sailing.vessel.speed, weather, mobile: options.simplified,
       flightWind: flightAudio(step, flight.active, flight.speed) })
     extension.scope.update(night>0.5,storm)
@@ -598,7 +614,6 @@ function startHarbor(options: RuntimeOptions, view: { renderer: T.WebGLRenderer;
   const world = addWorld(scene, kit)
   addEvalStation(scene, kit)
   const forest = addHarborForest(scene, kit)
-  const mayor = addHarborMayor(scene, kit)
   const captain = addHarborCaptain(scene, { kit, vessel: world.vessel })
   const exhibitSet = addExhibits(scene, kit, options.artworks)
   cleanup.push(exhibitSet.dispose)
@@ -608,16 +623,31 @@ function startHarbor(options: RuntimeOptions, view: { renderer: T.WebGLRenderer;
     fishing:options.onFishing, landed:()=>options.onOpen(FISHING.place) })
   const propObstacles = [...exhibitSet.obstacles, ...signObstacles]
   const obstacles = [...walkingObstacles(propObstacles, world.treeTops), pastimes.altar]
-  const animals = createHarborAnimals({ scene, kit, obstacles, simplified: options.simplified })
-  const extension=prepareSceneExtension({scene,camera,kit},{obstacles,animals,onChange:options.onScope,setAmbience:options.setAmbience})
+  // 村长要按障碍表判断能不能走（不然会走进自己屋里），传副本避免把 NPC 跟随盒算进去。
+  const mayor = addHarborMayor(scene, kit, [...obstacles])
+  const animals = createHarborAnimals({ scene, kit, obstacles: [...obstacles], simplified: options.simplified })
+  const extension=prepareSceneExtension({scene,camera,kit},
+    {obstacles:[...obstacles],animals,onChange:options.onScope,setAmbience:options.setAmbience})
+  // NPC 的碰撞：每个村民、村长各挂一个跟随碰撞盒，玩家撞不过去。
+  // 注意传给动物和村民的障碍表都是副本——不然他们会把自己的盒子当成墙，原地卡住。
+  const actors = [{ pose: mayor.pose, avatar: mayor.avatar }, ...extension.residents.followers]
+    .map(item => ({ ...item, follow: followObstacle(ACTOR_RADIUS) }))
+  for (const { follow } of actors) obstacles.push(follow.obstacle)
+  const syncActors = () => {
+    for (const { pose, avatar, follow } of actors) {
+      if (avatar.visible) follow.move(pose)
+      else follow.hide()
+    }
+  }
+  syncActors()
   const session = installInteraction(options, camera, {
-    exhibits: exhibitSet.exhibits, canvas, propObstacles, vessel: world.vessel, animals, obstacles, extension,
-    flightVolumes: world.flightVolumes, pastimes,
+    exhibits: exhibitSet.exhibits, canvas, propObstacles, vessel: world.vessel, yacht: world.yacht,
+    animals, obstacles, extension, flightVolumes: world.flightVolumes, pastimes,
   })
   cleanup.push(session.dispose)
   const avatar = createTravelAvatar(scene,kit)
   const { draw, setNight } = createSceneFrame(options, { scene, camera, output, canvas }, {
-    session, avatar, forest, animals,extension, mayor,
+    session, avatar, forest, animals,extension, mayor, syncActors,
     animate(elapsed, night, settings) {
       world.animate(elapsed, settings.bank)
       captain(elapsed, settings.reduced)

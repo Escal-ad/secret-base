@@ -6,10 +6,11 @@ import type { HarborPlace } from './harbor_hotspots'
 import type { createOrbitCamera } from './harbor_orbit_camera'
 import type { createPlayerMotion } from './harbor_player_motion'
 import type { createHarborSailing } from './harbor_sailing'
+import { SAILING } from './harbor_sailing_config'
 import { groundElevation } from './harbor_terrain'
 
 export type HarborActivity = 'lookout' | 'sunset' | 'tour' | 'drive'
-export type ActivityAction = HarborActivity | 'leave-lookout' | 'leave-sunset' | 'return-tour' | 'abort-tour' | 'dock' | 'return-drive'
+export type ActivityAction = HarborActivity | 'leave-lookout' | 'leave-sunset' | 'return-tour' | 'abort-tour' | 'dock' | 'return-drive' | 'board'
 type Coordinate = { x: number; z: number }
 type Dependencies = {
   motion: ReturnType<typeof createPlayerMotion>; orbit: ReturnType<typeof createOrbitCamera>;
@@ -78,14 +79,22 @@ export function createHarborActivities(deps: Dependencies) {
     } else if (action === 'leave-sunset' && mode === 'sunset') {
       motion.teleport(beforeSunset); orbit.center(motion.player.facing); changeMode(null)
     } else if (action === 'drive' && !mode) {
-      sailing.startTour(); orbit.setSailing(true); orbit.center(motion.player.facing,true); changeMode(action)
+      if (!sailing.startTour()) { deps.onNotice(SAILING.noBoatLabel); return false }
+      orbit.setSailing(true); orbit.center(motion.player.facing,true); changeMode(action)
+    } else if (action === 'board' && !mode) {
+      // 站在码头上船：上哪条由泊位决定（东堤是游艇，其余是小船）。
+      const berth = sailing.nearbyDock()
+      if (!berth) return false
+      sailing.toggle(berth)
+      orbit.setSailing(true); orbit.center(motion.player.facing, true); changeMode('drive')
     } else if ((action === 'dock' || action === 'return-drive') && mode === 'drive') {
       const dock = action === 'dock' ? sailing.nearbyDock() : undefined
       if (action === 'dock' && !dock) return false
       motion.teleport(sailing.finishTour(dock ?? undefined))
       orbit.setSailing(false); orbit.center(motion.player.facing); changeMode(null)
-      deps.onNotice(TOUR.finishLabel)
+      deps.onNotice(dock ? `已在${dock.title}靠岸` : TOUR.finishLabel)
     } else if (action === 'tour' && !mode) {
+      if (!sailing.startTour()) { deps.onNotice(SAILING.noBoatLabel); return false }
       tour.start(); orbit.setSailing(true); changeMode(action)
     } else if ((action === 'return-tour' || action === 'abort-tour') && mode === 'tour') {
       finishTour(action === 'abort-tour')

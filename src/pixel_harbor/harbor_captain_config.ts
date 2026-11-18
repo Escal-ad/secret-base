@@ -4,7 +4,10 @@ export const CAPTAIN = {
   action: '交谈',
   position: { x: 1.02, z: 12.29 },
   radius: 1.9,
-  appearance: { hair: '#655d57', shirt: '#426d78', trousers: '#58483d', hat: false },
+  // 船夫：油布渔帽 + 斜挎缆绳 + 深蓝裤脚，和东堤戴斗笠的钓鱼渔民区分开。
+  appearance: { hair: '#655d57', shirt: '#426d78', trousers: '#3f4a5c', hat: true,
+    headwear: 'souwester', headwearColors: { crown: '#a97b3c', band: '#6f4f28' },
+    rope: { color: '#d3b88a' } },
   anchor: [1.02, 2.68, 12.29],
   facing: 2.86,
   wavePeriod: 13,

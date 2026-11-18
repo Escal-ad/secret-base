@@ -155,6 +155,46 @@ export function makeBoat(kit: ModelKit, color: string) {
   return group
 }
 
+export function makeYacht(kit: ModelKit) {
+  const group = new T.Group()
+  const { box, cylinder } = kit
+  const white: Paint = ['#e9e4d7', 'wood']
+  const stripe: Paint = ['#3f5a68']
+  const deck: Paint = ['#c4a882', 'wood']
+  const floor: Paint = ['#b59a74', 'wood']
+  const trim: Paint = ['#8a8f8a']
+  const glass: Paint = ['#455a63']
+  // 船体（船头朝 +x，和小船同一套约定）
+  group.add(box([-0.2, 0.38, 0], [4.6, 0.64, 2.2], white))
+  group.add(box([2.6, 0.4, 0], [1.0, 0.56, 1.2], white))
+  group.add(box([-2.95, 0.4, 0], [0.9, 0.6, 1.9], white))
+  group.add(box([-0.2, 0.52, 0], [4.64, 0.12, 2.24], stripe))
+  // 甲板只铺四周，中间留一个凹下去的驾驶舱：人站在舱底，
+  // 前面只有半人高的驾驶台，第一人称才不会被挡。
+  group.add(box([2.0, 0.74, 0], [2.0, 0.08, 2.1], deck))
+  group.add(box([-2.65, 0.74, 0], [1.5, 0.08, 2.1], deck))
+  for (const side of [-1, 1]) group.add(box([-0.45, 0.74, side * 0.98], [2.9, 0.08, 0.24], deck))
+  group.add(box([-0.45, 0.52, 0], [2.9, 0.08, 1.72], floor))
+  for (const x of [-1.9, 1.0]) group.add(box([x, 0.63, 0], [0.12, 0.3, 1.72], white))
+  // 驾驶台与挡风
+  group.add(box([0.75, 0.85, 0], [0.36, 0.58, 1.1], white))
+  group.add(box([0.95, 1.0, 0], [0.06, 0.36, 1.1], glass))
+  // 船房挪到驾驶位后面：站在驾驶位往前看是通透的
+  group.add(box([-2.6, 1.16, 0], [1.34, 0.78, 1.86], white))
+  group.add(box([-2.6, 1.24, 0], [1.36, 0.3, 1.9], glass))
+  group.add(box([-2.6, 1.58, 0], [1.5, 0.08, 1.96], white))
+  group.add(cylinder([-2.6, 1.95, 0], [0.05, 0.07, 0.68, 6], trim))
+  group.add(box([-2.6, 2.3, 0], [0.06, 0.06, 0.6], trim))
+  // 前甲板栏杆 + 船尾泳台 + 救生圈
+  for (const side of [-1, 1]) {
+    group.add(box([2.0, 1.0, side * 0.98], [2.0, 0.05, 0.05], trim))
+    for (const x of [1.2, 2.6]) group.add(box([x, 0.9, side * 0.98], [0.05, 0.24, 0.05], trim))
+  }
+  group.add(box([-3.6, 0.3, 0], [0.3, 0.2, 1.6], deck))
+  group.add(box([-2.6, 1.24, 0.94], [0.26, 0.26, 0.06], ['#c0553f']))
+  return group
+}
+
 export function makeGull(kit: ModelKit) {
   const { box } = kit
   const bird = new T.Group()

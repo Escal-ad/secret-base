@@ -45,7 +45,7 @@ export const HARBOR_DESTINATIONS = {
   fishing: FISHING.place,
   wishing: WISHING.place,
   chair: { kind: 'chair', id: 'chair', label: '坐到摇椅上', x: -22.15, z: 0.62, radius: 1.8 },
-  notice: { kind: 'notice', id: 'notice', label: '查看公告', x: -15.8, z: -1.9, radius: 2.5 },
+  notice: { kind: 'notice', id: 'notice', label: '查看公告', x: -22.57, z: 4.54, radius: 2.5 },
   eval: { kind: 'eval', id: 'eval', label: evalStation.prompt, x: -10.8, z: 14.95, radius: 2.2 },
   mayor: { kind: 'mayor', id: PROFILE_UI.id, label: PROFILE_UI.action, ...PROFILE_UI.position, radius: PROFILE_UI.radius },
   lookout: { kind: 'lookout', id: LOOKOUT.id, label: LOOKOUT.action, ...LOOKOUT.position, radius: LOOKOUT.exitRadius },
@@ -54,7 +54,7 @@ export const HARBOR_DESTINATIONS = {
     radius: VILLAGE.radius, note: VILLAGE.note },
   captain: { kind: 'captain', id: CAPTAIN.id, label: CAPTAIN.action, ...CAPTAIN.position, radius: CAPTAIN.radius },
   hill: { kind: 'landmark', id: HILL.id, label: HILL.title, ...HILL.position, radius: HILL.radius, note: HILL.caption },
-  keeper: { kind: 'landmark', id: KEEPER.id, label: KEEPER.action, x: KEEPER.house.x, z: KEEPER.hotspot.z,
+  keeper: { kind: 'landmark', id: KEEPER.id, label: KEEPER.action, ...KEEPER.door,
     radius: KEEPER.hotspot.radius, note: KEEPER.note },
 } as const
 
@@ -89,6 +89,27 @@ const WATER = buildWaterGrid()
 
 function overlaps([left, right, near, far]: Footprint, [minX, maxX, minZ, maxZ]: Footprint) {
   return left < maxX && right > minX && near < maxZ && far > minZ
+}
+
+// NPC 碰撞：盒子每帧跟着人走。人高按 1.75 米算，跳不过去也踩不上去。
+export const ACTOR_HEIGHT = 1.75
+
+export function followObstacle(radius: number) {
+  const footprint: [number, number, number, number] = [0, 0, 0, 0]
+  const obstacle: WorldObstacle = { footprint, height: ACTOR_HEIGHT }
+  return {
+    obstacle,
+    move(body: { x: number; z: number }) {
+      footprint[0] = body.x - radius
+      footprint[1] = body.x + radius
+      footprint[2] = body.z - radius
+      footprint[3] = body.z + radius
+    },
+    /** 人进屋 / 躲雨隐藏时把盒子挪走，免得门口留一堵看不见的墙。 */
+    hide() {
+      footprint[0] = footprint[1] = footprint[2] = footprint[3] = 999
+    },
+  }
 }
 
 export function canWalk(x: number, z: number, obstacles: readonly Footprint[]) {
