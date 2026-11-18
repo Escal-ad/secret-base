@@ -57,10 +57,12 @@ function addPier(group: T.Group, kit: ModelKit, area: Footprint) {
 }
 
 function addLantern(group: T.Group, kit: ModelKit, [x, , z]: Point) {
+  // 灯臂朝栈桥内侧：z 正的一侧朝 -z，z 负的一侧朝 +z
+  const dir = z > 0.6 ? -1 : 1
   group.add(kit.box([x, DECK + 1.18, z], [0.105, 2.36, 0.105], ['#595655']))
-  group.add(kit.box([x, DECK + 2.36, z + 0.24], [0.105, 0.10, 0.54], ['#595655']))
-  group.add(markHarborGlow(kit.box([x, DECK + 2.25, z + 0.47], [0.24, 0.22, 0.24], ['#efc481']), 'street'))
-  group.add(kit.box([x, DECK + 2.41, z + 0.47], [0.33, 0.10, 0.34], ['#595655']))
+  group.add(kit.box([x, DECK + 2.36, z + 0.24 * dir], [0.105, 0.10, 0.54], ['#595655']))
+  group.add(markHarborGlow(kit.box([x, DECK + 2.25, z + 0.47 * dir], [0.24, 0.22, 0.24], ['#efc481']), 'street'))
+  group.add(kit.box([x, DECK + 2.41, z + 0.47 * dir], [0.33, 0.10, 0.34], ['#595655']))
 }
 
 function addTree(group: T.Group, kit: ModelKit, [x, y, z]: Point, scale: number) {
@@ -161,7 +163,7 @@ function addNetRack(group: T.Group, kit: ModelKit) {
 
 function addDockProps(group: T.Group, kit: ModelKit) {
   addNetRack(group, kit)
-  for (const [x, z] of [[-1.2, 2.34], [9, -2.34], [16.4, 2.69], [-13.4, -14.9], [-10.5, 13.4]]) {
+  for (const [x, z] of [[-1.2, 2.34], [-1.2, 0], [-1.2, -2.34], [9, -2.34], [16.4, 2.69], [-13.4, -14.9], [-10.5, 13.4]]) {
     addLantern(group, kit, [x, DECK, z])
   }
   for (const [x, z] of [[-8, -2.05], [13.8, 3.12], [0, 12.2], [-6.9, 15.9], [-21, 2.6]]) {
