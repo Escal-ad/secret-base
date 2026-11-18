@@ -7,7 +7,7 @@ import type { SceneExtension } from '../harbor_expansion/harbor-scene-extension'
 import { createFirstCamera } from '../harbor_expansion/harbor-first-camera'
 import { createTravelAvatar } from '../harbor_expansion/harbor-traveler'
 import { addHarborMayor } from '../harbor_expansion/harbor-mayor'
-import { HILL_FLIGHT_VOLUMES } from '../harbor_expansion/harbor-hill'
+import { HILL_FLIGHT_VOLUMES, HILL_OBSTACLES } from '../harbor_expansion/harbor-hill'
 import { createFlightMotion } from '../harbor_flight/harbor-flight-motion'
 import { createFlightAudio } from '../harbor_flight/harbor-flight-audio'
 import { createFlightSpace, flightEdge } from '../harbor_flight/harbor-flight-space'
@@ -52,7 +52,7 @@ import { canSail, createHarborSailing } from './harbor_sailing'
 import { createLightTransition, createRenderQuality } from './harbor_render_quality'
 import type { TourCue } from './harbor_tour'
 import { findTravelLanding } from './harbor_travel'
-import { TERRACE_HOUSES, TERRACE_SOLIDS } from './harbor_village_plan'
+import { TERRACE_HOUSES, TERRACE_SOLIDS, TERRACE_TRUNKS } from './harbor_village_plan'
 import { createHarborWake } from './harbor_wake'
 import { addWorld, HARBOR_STRUCTURES, TERRACE_ROOFS, WORLD_OBSTACLES } from './harbor_world'
 
@@ -204,6 +204,12 @@ function installExhibitPicking(exhibits: readonly Exhibit[], camera: T.Perspecti
 // its platform belongs to the lookout activity, which teleports the player.
 const LANDABLE_ROOFS = [...HARBOR_STRUCTURES.slice(1), ...TERRACE_ROOFS]
 
+// 树干：这些障碍原本没有高度，按规则会「无论多高都挡」，导致站在树冠上无法移动。
+// 给一个约等于树干的高度，站到树冠上就能正常走。
+const TRUNK_HEIGHT = 2.2
+const TRUNK_TOPS = new Map<string, number>()
+for (const footprint of [...TERRACE_TRUNKS, ...HILL_OBSTACLES]) TRUNK_TOPS.set(footprint.join(','), TRUNK_HEIGHT)
+
 function roofTop(footprint: Footprint) {
   return LANDABLE_ROOFS.find(item => item.footprint.every((value, index) => value === footprint[index]))?.height
 }
@@ -215,7 +221,8 @@ function walkingObstacles(propObstacles: readonly Footprint[], treeTops: readonl
   const ground = [...WORLD_OBSTACLES, EVAL_STATION_OBSTACLE.footprint, ...FOREST_OBSTACLES, ...NEW_LANDMARK_OBSTACLES,
     captain, ...propObstacles].map(footprint => ({
     footprint, height: JUMP.vaultable.find(item => item.footprint.every((value, index) => value === footprint[index]))?.height
-      ?? roofTop(footprint),
+      ?? roofTop(footprint)
+      ?? TRUNK_TOPS.get(footprint.join(',')),
   }))
   return [...ground, ...treeTops]
 }
