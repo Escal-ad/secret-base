@@ -119,7 +119,8 @@ function createPixelOutput(renderer: T.WebGLRenderer, getQuality: () => Settings
       const next=getQuality()
       if(next!==quality){quality=next;resizeTarget()}
       const { player,align } = options
-      anchor.set(player.x, DECK + ORBIT.focusHeight + player.height + player.elevation, player.z)
+      ;(window as unknown as { __harborPlayer?: typeof player }).__harborPlayer = player
+    anchor.set(player.x, DECK + ORBIT.focusHeight + player.height + player.elevation, player.z)
       if(align) alignPixels(camera, anchor, target)
       renderer.setRenderTarget(target)
       renderer.render(scene, camera)
@@ -176,7 +177,10 @@ function createLoop(tick: SceneTick) {
     const step = Math.min(frameTime, MOVEMENT.maxFrameStep)
     previous = now
     if (!preference.matches) elapsed += step
-    if (debugLabel) debugLabel.textContent = `x ${motion.player.x.toFixed(2)}   z ${motion.player.z.toFixed(2)}`
+    if (debugLabel) {
+      const spot = (window as unknown as { __harborPlayer?: { x: number; z: number } }).__harborPlayer
+      if (spot) debugLabel.textContent = "x " + spot.x.toFixed(2) + "   z " + spot.z.toFixed(2)
+    }
     tick(step, elapsed, preference.matches, frameTime)
     frame = requestAnimationFrame(run)
   }
