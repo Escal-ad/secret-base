@@ -56,7 +56,7 @@ export const HARBOR_DESTINATIONS = {
   wishing: WISHING.place,
   chair: { kind: 'chair', id: 'chair', label: '坐到摇椅上', x: -22.15, z: 0.62, radius: 1.8 },
   notice: { kind: 'notice', id: 'notice', label: '查看公告', x: -22.57, z: 4.54, radius: 2.5 },
-  eval: { kind: 'eval', id: 'eval', label: evalStation.prompt, x: -23.26, z: 6.86, radius: 2.2 },
+  eval: { kind: 'eval', id: 'eval', label: evalStation.prompt, x: -21.89, z: 9.18, radius: 2.2 },
   mayor: { kind: 'mayor', id: PROFILE_UI.id, label: PROFILE_UI.action, ...PROFILE_UI.position, radius: PROFILE_UI.radius },
   lookout: { kind: 'lookout', id: LOOKOUT.id, label: LOOKOUT.action, ...LOOKOUT.position, radius: LOOKOUT.exitRadius },
   sunset: { kind: 'sunset', id: SUNSET.id, label: SUNSET.action, ...SUNSET.position, radius: SUNSET.radius },
