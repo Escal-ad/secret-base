@@ -103,9 +103,9 @@ function addShore(group: T.Group, kit: ModelKit) {
   for (let index = 0; index < 16; index++) {
     addRock(group, kit, [8.25 + random(), 0.23, -12.4 - index * 0.83], [0.67, 0.74, 0.69])
     const x = -28 + random() * 2.6, z = -19 + index * 2.57, size = 0.9 + random() * 0.65
-    // 村长小屋 (-24.7,-3) 周边 7 米内不种树
-    const nearMayor = Math.hypot(x + 24.7, z + 3) < 7
-    if ((z < -12.3 || z > -8.4) && !nearMayor) addTree(group,kit,[x,DECK,z],size)
+    // 西岸整片平面不种树（村长小屋所在区域全部清空）
+    const inWestBank = x >= -30 && x <= -12 && z >= -21 && z <= 22
+    if ((z < -12.3 || z > -8.4) && !inWestBank) addTree(group,kit,[x,DECK,z],size)
   }
 }
 
