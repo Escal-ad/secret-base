@@ -157,6 +157,15 @@ function createLoop(tick: SceneTick) {
   const listeners = new AbortController()
   const { signal } = listeners
   const preference = window.matchMedia('(prefers-reduced-motion: reduce)')
+  // ?debug=1 时在角落显示玩家坐标，方便精确定位物件
+  const debugLabel = /[?&]debug/.test(location.search) ? (() => {
+    const node = document.createElement('div')
+    node.style.cssText = 'position:fixed;left:14px;bottom:78px;z-index:9999;background:rgba(20,28,32,.82);' +
+      'color:#f2ead8;font:14px/1.4 ui-monospace,monospace;padding:6px 10px;border-radius:6px;pointer-events:none'
+    document.body.appendChild(node)
+    return node
+  })() : null
+
   let frame = 0
   let previous: number | undefined
   let elapsed = 0
@@ -167,6 +176,7 @@ function createLoop(tick: SceneTick) {
     const step = Math.min(frameTime, MOVEMENT.maxFrameStep)
     previous = now
     if (!preference.matches) elapsed += step
+    if (debugLabel) debugLabel.textContent = `x ${motion.player.x.toFixed(2)}   z ${motion.player.z.toFixed(2)}`
     tick(step, elapsed, preference.matches, frameTime)
     frame = requestAnimationFrame(run)
   }
