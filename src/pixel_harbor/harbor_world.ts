@@ -430,10 +430,16 @@ function addBoats(scene: T.Scene, kit: ModelKit) {
 function addHeadlandReef(group: T.Group, kit: ModelKit) {
   let step = 0
   // 南岸（z ≈ -25.8），从岬角西端一直铺到东南角
-  for (let x = -16.5; x <= 8.6; x += 1.15) {
+  for (let x = -30.0; x <= 8.6; x += 1.15) {
     step += 1
     const size = 0.62 + (step % 4) * 0.06
     addRock(group, kit, [x, 0.14, -25.8], [size, 0.9 + (step % 3) * 0.08, size])
+  }
+  // 西岸竖着一列（x ≈ -30.4），从西南角一直往北铺到后山小径入口旁边
+  for (let z = -25.0; z <= -11.0; z += 1.15) {
+    step += 1
+    const size = 0.6 + (step % 6) * 0.05
+    addRock(group, kit, [-30.4, 0.14, z], [size, 0.86 + (step % 3) * 0.08, size])
   }
   // 东岸（x ≈ 8.9），从东南角往北铺到灯塔北侧
   for (let z = -25.0; z <= -11.5; z += 1.15) {
