@@ -126,11 +126,13 @@ export function createHarborAvatar(kit: ModelKit, appearance: Appearance = AVATA
   let fishingArm: number | undefined
   let phase = 0
   let swimPhase = 0
+  let sitBlend = 0
   let flightPose = { blend: 0, lean: 0, bank: 0, arms: 0 }
   return {
     avatar,
     detailAnchor: body,
     head,
+    setSitPosture(next: number) { sitBlend = T.MathUtils.clamp(next, 0, 1) },
     setFishingArm(angle?:number) { fishingArm = angle },
     swingCoat(angle: number) { hem.rotation.x = angle },
     wave(amount: number) { rightArm.rotation.z = amount },
@@ -190,6 +192,19 @@ export function createHarborAvatar(kit: ModelKit, appearance: Appearance = AVATA
         rightArm.rotation.z = -SWIM.armSpread
         leftLeg.rotation.x = kick * SWIM.kick
         rightLeg.rotation.x = -kick * SWIM.kick
+      }
+      // 坐姿：大腿前伸、上身微后仰、手臂搭在腿上。只在 blend>0 时生效。
+      if (sitBlend > 0) {
+        const b = sitBlend
+        const thigh = -Math.PI / 2 + 0.30 * b
+        leftLeg.rotation.x = T.MathUtils.lerp(leftLeg.rotation.x, thigh, b)
+        rightLeg.rotation.x = T.MathUtils.lerp(rightLeg.rotation.x, thigh, b)
+        leftArm.rotation.x = T.MathUtils.lerp(leftArm.rotation.x, -0.22, b)
+        rightArm.rotation.x = T.MathUtils.lerp(rightArm.rotation.x, -0.22, b)
+        body.rotation.x = T.MathUtils.lerp(body.rotation.x, 0.28, b)
+        // 髋部对齐椅面：脚底原点抬高，身体略前移抵消后仰造成的位置变化
+        body.position.y += -0.07 * b
+        body.position.z += 0.15 * b
       }
       shadow.visible = !blend && !player.swimming
       updateBoxes()
