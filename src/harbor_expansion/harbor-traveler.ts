@@ -67,11 +67,13 @@ export function createTravelAvatar(scene: T.Scene, kit: ModelKit) {
   let flyBlend = 0
   // Keep the cape, scarf and flight pose on the same selected avatar.
   return (player: HarborPlayer, state: { settings: Settings; rain: number; first: number; seconds: number; reduced: boolean;
-    simplified: boolean; yaw: number; flying: boolean; bank: number; fishingArm?: number }) => {
+    simplified: boolean; yaw: number; flying: boolean; bank: number; fishingArm?: number; mounted?: boolean }) => {
     const { appearance } = state.settings
     const actor = actors[appearance]
     const low = state.simplified || state.settings.quality === 'low'
-    for (const candidate of Object.values(actors)) candidate.avatar.visible = candidate === actor && state.first < TRAVELER.first.hideBlend
+    // mounted（开直升机）时把人物收起来，只留下飞机本身
+    for (const candidate of Object.values(actors)) candidate.avatar.visible = candidate === actor
+      && state.first < TRAVELER.first.hideBlend && !state.mounted
     time += state.seconds
     const vertical = (player.height - lastHeight) / Math.max(state.seconds,0.016)
     const turn = Math.atan2(Math.sin(player.facing-lastFacing),Math.cos(player.facing-lastFacing))

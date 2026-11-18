@@ -69,15 +69,18 @@ export function createOrbitCamera(camera: T.PerspectiveCamera, obstacles: readon
   let lookout = false
   let flying = false
   let firstPerson = false
+  // 开直升机时把镜头再拉远、压低视角，免得被机身和尾梁挡住
+  let heliPull = 0
   return {
     update(player: HarborPlayer, seconds: number, immediate = false) {
       const turn = immediate ? 1 : dampingFactor(seconds, ORBIT.orbitTime)
       orbit.yaw = dampAngle(orbit.yaw, target.yaw, turn)
       const pitch = flying
-        ? T.MathUtils.clamp(target.pitch - FLIGHT.camera.pitch, ORBIT.flightMinPitch, ORBIT.flightMaxPitch)
+        ? T.MathUtils.clamp(target.pitch - FLIGHT.camera.pitch - heliPull * FLIGHT.heli.pitchPull,
+          ORBIT.flightMinPitch, ORBIT.flightMaxPitch)
         : target.pitch
       orbit.pitch = T.MathUtils.lerp(orbit.pitch, pitch, turn)
-      const distance = target.distance + (flying ? FLIGHT.camera.distance : 0)
+      const distance = target.distance + (flying ? FLIGHT.camera.distance : 0) + heliPull * FLIGHT.heli.cameraPull
         + (player.swimming ? ORBIT.swimDistance : 0)
       orbit.distance = T.MathUtils.lerp(orbit.distance, distance, immediate ? 1 : dampingFactor(seconds, ORBIT.zoomTime))
       follow(player, orbit, { step: seconds, immediate })
@@ -100,6 +103,8 @@ export function createOrbitCamera(camera: T.PerspectiveCamera, obstacles: readon
       Object.assign(target, { yaw: (facing + Math.PI) % FULL_TURN, pitch: lookout ? LOOKOUT.startPitch : ORBIT.pitch,
         distance: lookout ? LOOKOUT.distance : sailing ? ORBIT.vesselDistance : ORBIT.distance })
     },
+    /** 开直升机时用：镜头拉远、俯角压低，保证前方视野不被机身挡住。 */
+    setHeli(on: boolean) { heliPull = on ? 1 : 0 },
     setSailing(sailing: boolean) { target.distance = sailing ? ORBIT.vesselDistance : ORBIT.distance },
     setFlight(active: boolean) {
       flying = active

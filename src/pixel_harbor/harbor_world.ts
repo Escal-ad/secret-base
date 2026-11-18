@@ -265,12 +265,12 @@ function addHelicopter(group: T.Group, kit: ModelKit) {
     for (const z of [-0.7, 0.9]) heli.add(kit.box([side * 0.62, 0.4, z], [0.2, 0.62, 0.12], HELI_DARK))
   }
   group.add(heli)
+  return heli
 }
 function addVillage(group: T.Group, kit: ModelKit) {
   addCottages(group, kit)
   addHelipad(group, kit)
   addHelipadFence(group, kit)
-  addHelicopter(group, kit)
   // 守塔人小屋：从岬角西侧 (-8,-21) 往东挪到灯塔附近 (-2.69,-21.21)，门仍朝 +z（朝港口）。
   placeHouse(group, kit, { position: [-2.69, DECK, -21.21], size: HOUSE_SIZE, color: 2, yaw: Math.PI })
   placeHouse(group, kit, { position: [-24.7, DECK, -3], size: HOUSE_SIZE, color: 1, yaw: -Math.PI / 2 })
@@ -497,6 +497,7 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
   // 交界处那对石墩也不放，避免桥口两边各插一根。
   addPier(staticWorld, kit, { area: PIER, deckFrom: WEST_BANK[1], postSkip: 1 })
   addPier(staticWorld, kit, { area: LANDING })
+  const helicopter = addHelicopter(staticWorld, kit)
   addVillage(staticWorld, kit)
   addDockProps(staticWorld, kit)
   addWestCoast(staticWorld, kit)
@@ -530,5 +531,5 @@ export function addWorld(scene: T.Scene, kit = createModelKit()) {
       boat.rotation.x = Math.sin(elapsed * 0.88 + index * 0.65) * 0.045 + (boat === vessel ? bank : 0)
     })
   }
-  return { animate, vessel, yacht, flightVolumes, treeTops }
+  return { animate, vessel, yacht, helicopter, flightVolumes, treeTops }
 }

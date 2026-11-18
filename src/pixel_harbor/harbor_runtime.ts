@@ -9,9 +9,10 @@ import { createTravelAvatar } from '../harbor_expansion/harbor-traveler'
 import { addHarborMayor } from '../harbor_expansion/harbor-mayor'
 import { HILL_FLIGHT_VOLUMES, HILL_OBSTACLES } from '../harbor_expansion/harbor-hill'
 import { createFlightMotion } from '../harbor_flight/harbor-flight-motion'
+import { FLIGHT } from '../harbor_flight/harbor-flight-config'
 import { createFlightAudio } from '../harbor_flight/harbor-flight-audio'
 import { createFlightSpace, flightEdge } from '../harbor_flight/harbor-flight-space'
-import { FLIGHT } from '../harbor_flight/harbor-flight-config'
+
 import { scopeHotspot } from '../harbor_expansion/harbor-scope'
 import type { ScopeDisplay } from '../harbor_expansion/harbor-scope'
 import type { EmitSound, SetAmbience } from '../harbor_expansion/harbor-ambience'
@@ -54,7 +55,7 @@ import type { TourCue } from './harbor_tour'
 import { findTravelLanding } from './harbor_travel'
 import { TERRACE_HOUSES, TERRACE_SOLIDS, TERRACE_TRUNKS } from './harbor_village_plan'
 import { createHarborWake } from './harbor_wake'
-import { addWorld, HARBOR_STRUCTURES, TERRACE_ROOFS, WORLD_OBSTACLES } from './harbor_world'
+import { addWorld, HARBOR_STRUCTURES, HELIPAD, TERRACE_ROOFS, WORLD_OBSTACLES } from './harbor_world'
 
 type RuntimeOptions = {
   mount: HTMLElement
@@ -253,7 +254,7 @@ function resolveInteraction(player: HarborPlayer, animals: ReturnType<typeof cre
 
 type NavigationWorld = {
   exhibits: readonly Exhibit[]; canvas: HTMLCanvasElement; propObstacles: Footprint[]
-  vessel: T.Group; yacht: T.Group
+  vessel: T.Group; yacht: T.Group; helicopter: T.Group
   animals: ReturnType<typeof createHarborAnimals>; obstacles: ReturnType<typeof walkingObstacles>
   extension: SceneExtension
   pastimes: ReturnType<typeof createHarborPastimes>
@@ -278,10 +279,20 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
   const motion = createPlayerMotion(obstacles)
   const { player } = motion
   // 由活动模块在创建后接管：降落平台等同于「登塔」，这样下塔方式与原来一致。
-  let landOnPlatform: () => boolean = () => false
+  // 直升机：停在停机坪上的那架。站到机身旁按 F 上机；飞行中按 R 一键回到停机坪。
+  const heli = { riding: false, home: { x: HELIPAD.x, y: HELIPAD.top + 0.09, z: HELIPAD.z } }
+  const nearHelicopter = () => Math.hypot(player.x - heli.home.x, player.z - heli.home.z) < 5.5
+  function parkHelicopter() {
+    world.helicopter.position.set(heli.home.x, heli.home.y, heli.home.z)
+    world.helicopter.rotation.y = 0
+  }  let landOnPlatform: () => boolean = () => false
   const flight = createFlightMotion(player, createFlightSpace(obstacles, [
     ...cameraObstacles, ...world.flightVolumes, ...FOREST_FLIGHT_VOLUMES, ...HILL_FLIGHT_VOLUMES,
-  ]), { change: options.onFlight, notice: options.onFlightNotice,
+  ]), { change: (active: boolean) => {
+    options.onFlight(active)
+    heli.riding = active && nearHelicopter()
+    orbit.setHeli(heli.riding)
+  }, notice: options.onFlightNotice,
     land: (point: { x: number; y: number; z: number }) => {
       if (isOverLookoutRing(point)) return landOnPlatform()
       return canWalkAt(point.x, point.z, { obstacles: [], height: 0 })
@@ -292,6 +303,29 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
   const sailing = createHarborSailing([{ id: 'skiff', group: world.vessel }, { id: 'yacht', group: yacht }],
     player, () => extension.weather.frame.ice)
   const orbit = createOrbitCamera(camera, cameraObstacles)
+  /** 飞行中把直升机挂到玩家脚下；不开的时候它停在停机坪上。 */
+  function syncHelicopter() {
+    if (!heli.riding) return
+    world.helicopter.position.set(player.x,
+      DECK + player.elevation + player.height - FLIGHT.heli.lift, player.z)
+    world.helicopter.rotation.y = player.facing
+  }
+  /** R 键：一键回到停机坪（连人带机） */
+  function returnToHelipad() {
+    if (!heli.riding) { parkHelicopter(); options.onFlightNotice(FLIGHT.heli.home); return }
+    heli.riding = false
+    orbit.setHeli(false)
+    flight.reset()
+    parkHelicopter()
+    motion.teleport({ x: heli.home.x, z: heli.home.z + 3.6 })
+    options.onFlightNotice(FLIGHT.heli.home)
+  }
+  const onHeliKey = (event: KeyboardEvent) => {
+    if (event.code !== 'KeyR') return
+    const away = Math.hypot(world.helicopter.position.x - heli.home.x, world.helicopter.position.z - heli.home.z) > 0.2
+    if (heli.riding || away) returnToHelipad()
+  }
+  window.addEventListener('keydown', onHeliKey)
   const first = createFirstCamera(camera)
   const places = listHarborPlaces(exhibits)
   const activity = createHarborActivities({ motion, orbit, sailing,
@@ -419,6 +453,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     orbit.update(player, 0, true)
   })
   return { ...controls, player, places, sailing, flight, tracker, cameraObstacles, activity, getInteraction, scope,
+    syncHelicopter, heliRiding: () => heli.riding,
     viewYaw: () => orbit.yaw,
     pastimes,
     stopFishing() {
@@ -540,7 +575,9 @@ function createSceneFrame(options: RuntimeOptions, view: {
     const motionTime=reduced?0:elapsed
     const fishingArm = pastimes.update(player,{ step,frameTime,time:motionTime,night,low:low||!quality.flags.cloth,
       reduced,weather:prefs.weather })
-    avatar(player, { fishingArm, settings: prefs, rain: weather.rain, first: first.blend, seconds: step, reduced,
+    session.syncHelicopter()
+    avatar(player, { fishingArm, settings: prefs, rain: weather.rain, first: first.blend, seconds: step,
+      mounted: session.heliRiding(), reduced,
       simplified: !quality.flags.cloth, yaw: first.yaw, flying: flight.active, bank: flight.bank })
     extension.residents.update(player,step,{night,rain:weather.rain,snow:weather.snow,reduced,
       limit:low?3:!quality.flags.residents?4:Infinity})
@@ -642,6 +679,7 @@ function startHarbor(options: RuntimeOptions, view: { renderer: T.WebGLRenderer;
   syncActors()
   const session = installInteraction(options, camera, {
     exhibits: exhibitSet.exhibits, canvas, propObstacles, vessel: world.vessel, yacht: world.yacht,
+    helicopter: world.helicopter,
     animals, obstacles, extension, flightVolumes: world.flightVolumes, pastimes,
   })
   cleanup.push(session.dispose)
