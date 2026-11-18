@@ -61,13 +61,14 @@ function makeZMark() {
   context.textBaseline = 'middle'
   context.fillText('Z', canvas.width / 2, canvas.height / 2)
   const material = new T.MeshBasicMaterial({ map: pixelTexture(canvas), transparent: true, depthWrite: false })
-  return new T.Mesh(new T.PlaneGeometry(0.3, 0.3), material)
+  return new T.Mesh(new T.PlaneGeometry(0.5, 0.5), material)
 }
 
 export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   const chair = buildChair(kit)
   const chairY = DECK + groundElevation(MAYOR_NPC.chair.x, MAYOR_NPC.chair.z)
   chair.position.set(MAYOR_NPC.chair.x, chairY, MAYOR_NPC.chair.z)
+  chair.rotation.order = 'YXZ'
   chair.rotation.y = MAYOR_NPC.restYaw
   scene.add(chair)
 
@@ -136,15 +137,15 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     pose.height = seated ? 0.34 : 0
     actor.update(pose, step, reduced)
     // 身体跟着椅背后仰，而不是笔直坐着
-    actor.detailAnchor.rotation.x = seated && !indoors ? rock - 0.30 : rock
+    actor.detailAnchor.rotation.x = seated && !indoors ? rock - 0.55 : rock
     // 打盹：头随摇晃缓慢下垂、微微点头
     actor.head.rotation.x = seated && !indoors ? 0.22 + Math.sin(rockTime * 0.55) * 0.10 : 0
     // Z 字：从头顶往上飘，同时放大并淡出，循环三片
     zMarks.forEach((mark, index) => {
       const phase = ((rockTime * 0.22) + index / zMarks.length) % 1
       const awake = seated && !indoors
-      mark.position.set(0.16 + phase * 0.20, 1.34 + phase * 0.78, 0)
-      mark.scale.setScalar(0.65 + phase * 0.65)
+      mark.position.set(0.20 + phase * 0.26, 1.44 + phase * 0.86, 0)
+      mark.scale.setScalar(0.8 + phase * 0.7)
       const material = mark.material as T.MeshBasicMaterial
       material.opacity = awake ? Math.max(0, 1 - phase) * 0.95 : 0
       mark.visible = awake
