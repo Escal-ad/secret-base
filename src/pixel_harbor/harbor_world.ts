@@ -1,5 +1,5 @@
 import * as T from 'three'
-import { DECK, HEADLAND, HEADLAND_FILL, LANDING, PIER, SOUTH_QUAY, TERRACE_WEST_FILL, WEST_BANK } from './harbor_layout'
+import { DECK, HEADLAND, HEADLAND_FILL, LANDING, PIER, SOUTH_QUAY, SOUTH_QUAY_GRASS, TERRACE_WEST_FILL, WEST_BANK } from './harbor_layout'
 import type { WorldObstacle } from './harbor_layout'
 import { groundElevation } from './harbor_terrain'
 import type { Footprint } from './harbor_layout'
@@ -110,7 +110,9 @@ function addShore(group: T.Group, kit: ModelKit) {
   const [fillWest, fillEast, fillNorth, fillSouth] = TERRACE_WEST_FILL
   group.add(kit.box([(fillWest + fillEast) / 2, VILLAGE.upperY - 2.4, (fillNorth + fillSouth) / 2],
     [fillEast - fillWest, 4.8, fillSouth - fillNorth], ['#8ca06a', 'grass']))
-  group.add(slab(kit, SOUTH_QUAY, STONE))
+  // 石台西半边改成草地（村长小屋那一侧），东半边仍是石板，中间在 x=-11.6 拼缝
+  group.add(slab(kit, [[-11.6][0], SOUTH_QUAY[1], SOUTH_QUAY[2], SOUTH_QUAY[3]], STONE))
+  group.add(slab(kit, SOUTH_QUAY_GRASS, ['#8ca06a', 'grass']))
   group.add(slab(kit, [10.4, 22, 16.1, 19.9], STONE))
   group.add(kit.box([-10, DECK - 0.012, 12.2], [31, 0.026, 2.4], ['#c7b299', 'brick']))
   for (let index = 0; index < 18; index++) {
