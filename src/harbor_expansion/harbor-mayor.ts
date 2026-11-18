@@ -1,6 +1,7 @@
 import * as T from 'three'
 import { createHarborAvatar } from '../pixel_harbor/harbor_avatar'
 import { DECK, groundElevation } from '../pixel_harbor/harbor_terrain'
+import { makeCanvas, pixelTexture } from '../pixel_harbor/harbor_materials'
 import type { ModelKit, Paint } from '../pixel_harbor/harbor_models'
 import type { HarborPlayer } from '../pixel_harbor/harbor_player_motion'
 import { dampAngle, dampingFactor } from '../pixel_harbor/harbor_damping'
@@ -50,6 +51,19 @@ function buildChair(kit: ModelKit) {
   return chair
 }
 
+// 打瞌睡时头顶飘出的「Z」：每片独立材质，方便单独控制透明度
+function makeZMark() {
+  const { canvas, context } = makeCanvas(32, 32)
+  context.clearRect(0, 0, canvas.width, canvas.height)
+  context.fillStyle = '#f4efe4'
+  context.font = 'bold 26px "Microsoft YaHei", sans-serif'
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillText('Z', canvas.width / 2, canvas.height / 2)
+  const material = new T.MeshBasicMaterial({ map: pixelTexture(canvas), transparent: true, depthWrite: false })
+  return new T.Mesh(new T.PlaneGeometry(0.3, 0.3), material)
+}
+
 export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   const chair = buildChair(kit)
   const chairY = DECK + groundElevation(MAYOR_NPC.chair.x, MAYOR_NPC.chair.z)
@@ -60,6 +74,8 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   const actor = createHarborAvatar(kit, {
     hair: '#cdc6bd', skin: '#d9b394', shirt: '#4d5a68', trousers: '#3d454e', hat: false, headwear: 'bandana',
   })
+  const zMarks = [makeZMark(), makeZMark(), makeZMark()]
+  zMarks.forEach(z => actor.avatar.add(z))
   scene.add(actor.avatar)
   const pose: HarborPlayer = {
     x: MAYOR_NPC.chair.x, z: MAYOR_NPC.chair.z, facing: MAYOR_NPC.restYaw,
@@ -119,8 +135,19 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     // 坐在躺椅上时稍微抬高，落在椅面而不是地面。
     pose.height = seated ? 0.34 : 0
     actor.update(pose, step, reduced)
-    actor.detailAnchor.rotation.x = rock
+    // 身体跟着椅背后仰，而不是笔直坐着
+    actor.detailAnchor.rotation.x = seated && !indoors ? rock - 0.30 : rock
     // 打盹：头随摇晃缓慢下垂、微微点头
     actor.head.rotation.x = seated && !indoors ? 0.22 + Math.sin(rockTime * 0.55) * 0.10 : 0
+    // Z 字：从头顶往上飘，同时放大并淡出，循环三片
+    zMarks.forEach((mark, index) => {
+      const phase = ((rockTime * 0.22) + index / zMarks.length) % 1
+      const awake = seated && !indoors
+      mark.position.set(0.16 + phase * 0.20, 1.34 + phase * 0.78, 0)
+      mark.scale.setScalar(0.65 + phase * 0.65)
+      const material = mark.material as T.MeshBasicMaterial
+      material.opacity = awake ? Math.max(0, 1 - phase) * 0.95 : 0
+      mark.visible = awake
+    })
   }
 }
