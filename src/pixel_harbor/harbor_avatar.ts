@@ -202,9 +202,7 @@ export function createHarborAvatar(kit: ModelKit, appearance: Appearance = AVATA
         leftArm.rotation.x = T.MathUtils.lerp(leftArm.rotation.x, -0.22, b)
         rightArm.rotation.x = T.MathUtils.lerp(rightArm.rotation.x, -0.22, b)
         body.rotation.x = T.MathUtils.lerp(body.rotation.x, 0.28, b)
-        // 注意：这里必须用绝对赋值。写成 += 会逐帧累加，几秒钟就把人挪出地图。
-        body.position.y -= 0.10 * b
-        body.position.z = 0.15 * b
+        // 位置由外部按座位锚点对齐，这里只负责关节角度。
       }
       shadow.visible = !blend && !player.swimming
       updateBoxes()
