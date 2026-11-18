@@ -424,6 +424,22 @@ function addBoats(scene: T.Scene, kit: ModelKit) {
 
 // 塔底门廊已移除：灯塔门前恢复原来的空地。
 
+/** 岬角外圈的防波礁石：沿南岸和东岸各铺一列，把灯塔和陆地整个围起来。 */
+function addHeadlandReef(group: T.Group, kit: ModelKit) {
+  let step = 0
+  // 南岸（z ≈ -25.8），从岬角西端一直铺到东南角
+  for (let x = -16.5; x <= 8.6; x += 1.15) {
+    step += 1
+    const size = 0.62 + (step % 4) * 0.06
+    addRock(group, kit, [x, 0.14, -25.8], [size, 0.9 + (step % 3) * 0.08, size])
+  }
+  // 东岸（x ≈ 8.9），从东南角往北铺到灯塔北侧
+  for (let z = -25.0; z <= -11.5; z += 1.15) {
+    step += 1
+    const size = 0.6 + (step % 5) * 0.05
+    addRock(group, kit, [8.9, 0.14, z], [size, 0.86 + (step % 3) * 0.08, size])
+  }
+}
 export const HARBOR_STRUCTURES = [
   { footprint: [5.15, 8.25, -23.1, -20.0], height: 10.4 },
   // 四栋同规格民居：都是 4.4 × 4 的水平投影，屋顶可站高度统一 3.9（碰撞盒加 0.05 余量）
@@ -500,6 +516,7 @@ function collectTreeTops(world: T.Group): WorldObstacle[] {
 export function addWorld(scene: T.Scene, kit = createModelKit()) {
   const staticWorld = new T.Group()
   addShore(staticWorld, kit)
+  addHeadlandReef(staticWorld, kit)
   addEastDockFittings(staticWorld, kit)
   // 栈桥西端：桥面收到西岸岸线（x = -12）为止，再往西会和草地完全重合、渲染时互相闪；
   // 交界处那对石墩也不放，避免桥口两边各插一根。
