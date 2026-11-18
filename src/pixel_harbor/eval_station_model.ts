@@ -15,9 +15,10 @@ const CANVAS_WIDTH = 112
 const CANVAS_HEIGHT = 40
 const POSTS = [-1, 1]
 
+// 只挡亭子后半部分（柜台/背板那一侧），前半部分是敞开的，人能走进去
 export const EVAL_STATION_OBSTACLE = {
-  footprint: [BOOTH_X - HALF_WIDTH, BOOTH_X + HALF_WIDTH,
-    BOOTH_Z - HALF_DEPTH, BOOTH_Z + HALF_DEPTH] as Footprint,
+  footprint: [BOOTH_X + HALF_DEPTH - 0.9, BOOTH_X + HALF_DEPTH,
+    BOOTH_Z - HALF_WIDTH, BOOTH_Z + HALF_WIDTH] as Footprint,
   height: HEIGHT,
 }
 
@@ -55,5 +56,7 @@ export function addEvalStation(scene: T.Scene, kit: ModelKit) {
   booth.add(box([-0.84, 1.25, -1.16], [0.44, 0.09, 0.29], ['#d8c8a2']))
   booth.add(makeStationSign())
   booth.position.set(BOOTH_X, DECK, BOOTH_Z)
+  // 面朝西（大海、落日那一面），和村长小屋同一个朝向：局部 -z 转到世界 -x
+  booth.rotation.y = Math.PI / 2
   scene.add(booth)
 }
