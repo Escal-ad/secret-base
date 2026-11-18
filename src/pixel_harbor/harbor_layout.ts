@@ -9,6 +9,9 @@ import { DECK, VILLAGE_PATHS } from './harbor_terrain'
 import { HILL } from '../harbor_expansion/harbor-hill-config'
 
 export type Footprint = readonly [minX: number, maxX: number, minZ: number, maxZ: number]
+// 站在屋顶时 player.height 由浮点减法得出，可能比真实高度小一点点；
+// 不加容差会把脚下的建筑误判成墙，导致人在屋顶上一动不能动。
+const HEIGHT_EPSILON = 0.02
 export type WorldObstacle = {
   footprint: Footprint
   height?: number
@@ -99,7 +102,8 @@ export function canWalkAt(x: number, z: number, { obstacles, height, radius }: {
   const feet = playerFootprint(x, z, radius)
   return contains(WATER.bounds, feet[0], feet[2]) && contains(WATER.bounds, feet[1], feet[3])
     && !WATER.cells.some(cell => overlaps(feet, cell))
-    && !obstacles.some(obstacle => !obstacle.supportOnly && (obstacle.height === undefined || height < obstacle.height)
+    && !obstacles.some(obstacle => !obstacle.supportOnly
+      && (obstacle.height === undefined || height + HEIGHT_EPSILON < obstacle.height)
       && overlaps(feet, obstacle.footprint))
 }
 
@@ -109,7 +113,7 @@ export function findSupportHeight(x: number, z: number, { obstacles, height }: {
   const feet = playerFootprint(x, z)
   let floor = 0
   for (const obstacle of obstacles) {
-    if (obstacle.height !== undefined && obstacle.height <= height && overlaps(feet, obstacle.footprint)) {
+    if (obstacle.height !== undefined && obstacle.height <= height + HEIGHT_EPSILON && overlaps(feet, obstacle.footprint)) {
       floor = Math.max(floor, obstacle.height)
     }
   }
