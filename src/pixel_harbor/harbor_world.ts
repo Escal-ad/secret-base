@@ -264,7 +264,7 @@ export const TERRACE_ROOFS: { footprint: Footprint; height: number }[] = TERRACE
 
 export const WORLD_OBSTACLES: Footprint[] = [
   ...HARBOR_STRUCTURES.map(structure => structure.footprint),
-  ...TERRACE_HOUSES.filter(house => house.base === VILLAGE.upperY).map(house => house.footprint),
+  ...TERRACE_HOUSES.map(house => house.footprint),
   ...TERRACE_TRUNKS,
   ...HILL_OBSTACLES,
   [-30, VILLAGE.ramp[0], 22.74, 23.29], [-30, -25, -21, -12.32], [-30,-25,-8.38,22], [1.7, 4.3, 14.16, 14.44],
