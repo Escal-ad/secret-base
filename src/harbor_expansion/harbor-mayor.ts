@@ -25,8 +25,8 @@ function buildChair(kit: ModelKit) {
   chair.add(kit.box([0, 0.28, 0], [0.92, 0.10, 0.56], FRAME))
   chair.add(kit.box([0, 0.36, 0], [0.80, 0.06, 0.48], CLOTH))
   // 靠背向后倾斜
-  const back = kit.box([0, 0.62, -0.30], [0.88, 0.62, 0.09], FRAME)
-  back.rotation.x = -0.42
+  const back = kit.box([0, 0.66, -0.38], [0.88, 0.62, 0.09], FRAME)
+  back.rotation.x = -0.62
   chair.add(back)
   for (const side of [-1, 1]) {
     chair.add(kit.box([side * 0.42, 0.14, 0.22], [0.08, 0.28, 0.08], FRAME))
