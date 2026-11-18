@@ -105,11 +105,14 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     }
     // 坐在摇椅上时缓慢前后摇晃
     rockTime += step
-    chair.rotation.x = seated && !indoors ? Math.sin(rockTime * 1.5) * 0.055 : 0
+    // 椅子和人必须一起摇：村长的模型挂在场景上，不跟着椅子转。
+    const rock = seated && !indoors ? Math.sin(rockTime * 1.35) * 0.12 : 0
+    chair.rotation.x = rock
     if (indoors) return
     pose.elevation = groundElevation(pose.x, pose.z)
     // 坐在躺椅上时稍微抬高，落在椅面而不是地面。
     pose.height = seated ? 0.34 : 0
     actor.update(pose, step, reduced)
+    actor.detailAnchor.rotation.x = rock
   }
 }
