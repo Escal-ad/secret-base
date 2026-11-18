@@ -12,12 +12,7 @@ function Fail([string]$message) {
     exit 1
 }
 
-Write-Host "== 0/6 bake terrain ==" -ForegroundColor Cyan
-# 场景改动后必须重新烘焙，否则高度图与画面不一致
-& npm.cmd run bake
-if ($LASTEXITCODE -ne 0) { Fail 'terrain bake failed' }
-
-Write-Host "== 1/6 build ==" -ForegroundColor Cyan
+Write-Host "== 1/5 build ==" -ForegroundColor Cyan
 & npm.cmd run build
 if ($LASTEXITCODE -ne 0) { Fail 'build failed' }
 

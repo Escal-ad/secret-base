@@ -36,3 +36,6 @@ bench4_generation_inputs.zip
 
 # 本地视觉参考图，仅给 AI 看，不进仓库
 docs/refs/
+
+# 烘焙脚本的中间产物
+dist-bake/
