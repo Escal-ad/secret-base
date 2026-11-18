@@ -353,7 +353,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
         person.sitting = true
         person.x = hotspot.x
         person.z = hotspot.z
-        person.height = Number((hotspot as { note?: string }).note) || 0.72
+        person.height = Number((hotspot as { note?: string }).note) || 0.35
         person.facing = Math.PI / 2
       }
       return
