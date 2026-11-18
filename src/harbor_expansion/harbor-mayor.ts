@@ -83,7 +83,7 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   zMarks.forEach(z => actor.avatar.add(z))
   // 闭眼贴片：眼睛位置的两块肤色小方块，打盹时盖上即为闭眼
   const lids = [-1, 1].map(side => {
-    const lid = kit.box([side * 0.112, 1.248, 0.206], [0.074, 0.076, 0.012], ['#d9b394'])
+    const lid = kit.box([side * 0.112, 1.256, 0.206], [0.074, 0.046, 0.012], ['#d9b394'])
     lid.visible = false
     actor.head.add(lid)
     return lid
@@ -148,9 +148,11 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     pose.height = seated ? 0.34 : 0
     actor.update(pose, step, reduced)
     // 身体跟着椅背后仰，而不是笔直坐着
-    actor.detailAnchor.rotation.x = seated && !indoors ? rock - 0.55 : rock
+        actor.detailAnchor.rotation.x = seated && !indoors ? rock - 0.46 : rock
+    // 后仰时整体后移，让躯干落进椅面而不是穿过靠背
+    actor.detailAnchor.position.z = seated && !indoors ? -0.11 : 0
     // 打盹：头随摇晃缓慢下垂、微微点头
-    actor.head.rotation.x = seated && !indoors ? 0.22 + Math.sin(rockTime * 0.55) * 0.10 : 0
+    actor.head.rotation.x = seated && !indoors ? 0.06 + Math.sin(rockTime * 0.55) * 0.10 : 0
     lids.forEach(lid => { lid.visible = seated && !indoors })
     // Z 字：从头顶往上飘，同时放大并淡出，循环三片
     zMarks.forEach((mark, index) => {
