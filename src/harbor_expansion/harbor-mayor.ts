@@ -32,14 +32,20 @@ function buildChair(kit: ModelKit) {
     chair.add(kit.box([side * 0.42, 0.14, 0.22], [0.08, 0.28, 0.08], FRAME))
     chair.add(kit.box([side * 0.42, 0.20, -0.24], [0.08, 0.40, 0.08], FRAME))
   }
-  // 摇椅底弧：前后两条翘起的木条
+  // 摇椅底弧：用 9 段小方块拼出连续弧线（两端上翘）
+  const SEGMENT_COUNT = 9
+  const SPAN = 1.34
+  const SEG_LEN = SPAN / SEGMENT_COUNT
   for (const side of [-1, 1]) {
-    for (const fore of [-1, 1]) {
-      const tip = kit.box([side * 0.42, 0.10, fore * 0.62], [0.09, 0.07, 0.42], FRAME)
-      tip.rotation.x = fore * 0.34
-      chair.add(tip)
+    for (let i = 0; i < SEGMENT_COUNT; i++) {
+      const u = (i + 0.5) / SEGMENT_COUNT - 0.5          // -0.5 ~ 0.5
+      const z = u * SPAN
+      const lift = 0.16 * u * u * 4                       // 两端抬升，中间贴地
+      const tilt = -u * 1.15                              // 切线与弧线相切
+      const seg = kit.box([side * 0.42, 0.04 + lift, z], [0.09, 0.06, SEG_LEN + 0.012], FRAME)
+      seg.rotation.x = tilt
+      chair.add(seg)
     }
-    chair.add(kit.box([side * 0.42, 0.03, 0], [0.09, 0.06, 1.02], FRAME))
   }
   return chair
 }
@@ -114,5 +120,7 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     pose.height = seated ? 0.34 : 0
     actor.update(pose, step, reduced)
     actor.detailAnchor.rotation.x = rock
+    // 打盹：头随摇晃缓慢下垂、微微点头
+    actor.head.rotation.x = seated && !indoors ? 0.22 + Math.sin(rockTime * 0.55) * 0.10 : 0
   }
 }

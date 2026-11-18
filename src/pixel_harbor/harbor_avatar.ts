@@ -118,7 +118,8 @@ export function createHarborAvatar(kit: ModelKit, appearance: Appearance = AVATA
   const rightLeg = makeLimb(kit, { side: 1, kind: 'leg', appearance })
   body.add(kit.box(scaled([0, 8.45, 0]), scaled([6.13, 2.25, 4.03]), [appearance.trousers]))
   const hem = dressAvatar(body, kit, appearance)
-  body.add(makeHead(kit, appearance), leftArm, rightArm, leftLeg, rightLeg)
+  const head = makeHead(kit, appearance)
+  body.add(head, leftArm, rightArm, leftLeg, rightLeg)
   const updateBoxes = batchActorBoxes(body)
   const shadow = makeGroundShadow()
   avatar.add(body, shadow)
@@ -129,6 +130,7 @@ export function createHarborAvatar(kit: ModelKit, appearance: Appearance = AVATA
   return {
     avatar,
     detailAnchor: body,
+    head,
     setFishingArm(angle?:number) { fishingArm = angle },
     swingCoat(angle: number) { hem.rotation.x = angle },
     wave(amount: number) { rightArm.rotation.z = amount },
