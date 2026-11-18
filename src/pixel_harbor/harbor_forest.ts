@@ -26,7 +26,13 @@ function growForest() {
   })
 }
 
-const clusters = growForest()
+// 需要单独剔除的树（逐个坐标点名删除）
+const TREE_EXCLUSIONS: readonly (readonly [number, number])[] = [[-15.65, -24.29]]
+const clusters = growForest().map(cluster => ({
+  ...cluster,
+  trees: cluster.trees.filter(tree =>
+    !TREE_EXCLUSIONS.some(([x, z]) => Math.hypot(tree.x - x, tree.z - z) < 1.0)),
+}))
 type Tree = typeof clusters[number]['trees'][number]
 export const FOREST_OBSTACLES: Footprint[] = clusters.flatMap(cluster => cluster.trees.map(({ x, z, size }) => {
   const radius = FOREST.treeFoot * size
