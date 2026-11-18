@@ -60,8 +60,8 @@ export const HARBOR_DESTINATIONS = {
 
 export const LANDMARKS = [
   // 这两个只为了在头顶显示名牌；位置与村长 / 钓鱼渔民重合
-  { id: 'mayor-name', x: -22.15, z: 0.55, radius: 1.6, label: '村长', note: '村长住在村西的小屋里，最近常在门前的摇椅上打盹。' },
-  { id: 'fisher-name', x: 13.5, z: 16.3, radius: 1.6, label: '渔民', note: '每天清早都在这块石堤上钓鱼。' },
+  { id: 'mayor-name', x: -22.15, z: 0.55, radius: 1.6, label: '村长', note: '欢迎来到我的岛屿。' },
+  { id: 'fisher-name', x: 13.5, z: 16.3, radius: 1.6, label: '渔民', note: '想要钓鱼吗？' },
   { id: 'sunrise', x: 15.5, z: -0.7, radius: 2, label: '日出观景台', note: '从这里能看到朝阳下的浮标与远航渔船。' },
   ...SAILING.docks.map(dock => ({ id: dock.id, ...dock.land, radius: SAILING.boardingRadius,
     label: dock.title, note: dock.note })),
