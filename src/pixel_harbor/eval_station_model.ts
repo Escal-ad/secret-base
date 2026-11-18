@@ -7,7 +7,7 @@ import type { ModelKit } from './harbor_models'
 import { markHarborGlow } from './harbor_glow'
 
 const BOOTH_X = HARBOR_DESTINATIONS.eval.x
-const BOOTH_Z = 17.35
+const BOOTH_Z = 9.26
 const HALF_WIDTH = 1.8
 const HALF_DEPTH = 1.44
 const HEIGHT = 2.65

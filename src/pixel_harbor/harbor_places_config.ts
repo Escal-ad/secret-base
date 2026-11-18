@@ -26,7 +26,7 @@ export const PLACE_LABELS = {
     [WISHING.place.id]: { title:WISHING.title, iconType:'landmark', anchor:WISHING.anchor, blurb:WISHING.blurb },
     portfolio: { title: '作品船', iconType: 'artwork', anchor: [4.8, 2.25, -2.06], blurb: '浏览渔港作品集' },
     notice: { title: '展览公告栏', iconType: 'landmark', anchor: [-22.57, 2.85, 4.54], blurb: '查看渔港展览公告' },
-    eval: { title: '评测站', iconType: 'evaluation', anchor: [-10.8, 3.45, 15.8], blurb: '查看工作台演示与报告' },
+    eval: { title: '评测站', iconType: 'evaluation', anchor: [-23.26, 3.45, 7.71], blurb: '查看工作台演示与报告' },
     lighthouse: { title: '灯塔岬角', iconType: 'landmark', anchor: [6.7, 11.6, -21.55], blurb: '查看灯塔岬角' },
     sunrise: { title: '日出观景台', iconType: 'landmark', anchor: [15.5, 2.21, -0.7], blurb: '查看日出观景台' },
     mayor: { title: PROFILE_UI.title, iconType: 'contact', anchor: PROFILE_UI.anchor, blurb: PROFILE_UI.placeholder },
