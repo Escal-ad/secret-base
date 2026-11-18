@@ -31,7 +31,7 @@ export const SAILING = {
     // 东堤是 11.6 米长的石堤，泊位只有一个点，所以靠岸半径必须放得比其它码头大，
     // 否则沿堤停船时永远够不到 2.1 米的范围。
     { id: 'east-dock', title: '东堤码头', note: '南湾东侧的石堤，可在此靠岸与上下船。',
-      x: 16, z: 15.35, yaw: Math.PI / 2 - 0.06, land: { x: 16, z: 17.9 }, berthRadius: 5.6 },
+      x: 16, z: 15.35, yaw: Math.PI / 2 - 0.06, land: { x: 16.45, z: 19.39 }, berthRadius: 5.6 },
   ],
   boardLabel: '上船',
   dockLabel: '下船',

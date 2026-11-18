@@ -21,6 +21,7 @@ function makeRing(spec: typeof RIM) {
 
 export function createHotspotMarker(scene: T.Scene) {
   const marker = new T.Group()
+  marker.scale.setScalar(0.5)   // 光圈整体缩小一半
   const anchor = new T.Vector3()
   const halo = makeRing(HALO)
   const rim = makeRing(RIM)
