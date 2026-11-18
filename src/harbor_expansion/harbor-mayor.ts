@@ -1,6 +1,7 @@
 import * as T from 'three'
 import { createHarborAvatar } from '../pixel_harbor/harbor_avatar'
 import { DECK, groundElevation } from '../pixel_harbor/harbor_terrain'
+import { makeCanvas, pixelTexture } from '../pixel_harbor/harbor_materials'
 import type { ModelKit, Paint } from '../pixel_harbor/harbor_models'
 import type { HarborPlayer } from '../pixel_harbor/harbor_player_motion'
 import { dampAngle, dampingFactor } from '../pixel_harbor/harbor_damping'
@@ -68,6 +69,25 @@ function buildChair(kit: ModelKit) {
   return chair
 }
 
+/** 门口木牌：把文字画成贴图贴在墙上，和村长小屋的门牌同样做法 */
+function addHouseSign(scene: T.Scene, kit: ModelKit, text: string, x: number, y: number, z: number) {
+  const { canvas, context } = makeCanvas(256, 64)
+  context.fillStyle = '#5b4632'
+  context.fillRect(0, 0, canvas.width, canvas.height)
+  context.fillStyle = '#f2e6cf'
+  context.font = 'bold 34px "Microsoft YaHei", sans-serif'
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillText(text, canvas.width / 2, canvas.height / 2 + 2)
+  const board = new T.Mesh(
+    new T.PlaneGeometry(1.5, 0.375),
+    new T.MeshBasicMaterial({ map: pixelTexture(canvas) }),
+  )
+  board.position.set(x, y, z)
+  scene.add(board)
+  scene.add(kit.box([x, y, z - 0.03], [1.64, 0.48, 0.06], ['#4a3626']))
+}
+
 export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   const actor = createHarborAvatar(kit, {
     hair: '#cdc6bd', skin: '#d9b394', shirt: '#4d5a68', trousers: '#3d454e',
@@ -75,6 +95,9 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   })
   addPipe(kit, actor.head)
   scene.add(actor.avatar)
+
+  // 守塔人小屋门口的门牌（北墙，正对海港）
+  addHouseSign(scene, kit, '守塔人小屋', -8.0, DECK + 2.15, -19.04)
 
   // 小屋前的空地铺一层草地
   const lawn = kit.box([-23.8, DECK + 0.015, -3.0], [12.4, 0.05, 13.6], ['#8ca06a', 'grass'])
