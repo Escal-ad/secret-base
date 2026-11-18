@@ -1,5 +1,5 @@
 import * as T from 'three'
-import { DECK, HEADLAND, HEADLAND_FILL, LANDING, PIER, SOUTH_QUAY, TERRACE_WEST_FILL, WEST_BANK } from './harbor_layout'
+import { BASIN_GRASS, DECK, HEADLAND, HEADLAND_FILL, LANDING, PIER, SOUTH_QUAY, TERRACE_WEST_FILL, WEST_BANK } from './harbor_layout'
 import type { WorldObstacle } from './harbor_layout'
 import { groundElevation } from './harbor_terrain'
 import type { Footprint } from './harbor_layout'
@@ -106,6 +106,8 @@ function addShore(group: T.Group, kit: ModelKit) {
   // 岬角西南角的水湾补成草地：跟西岸、岬角同一片绿，南岸线接 z=-25、西岸线接 x=-30，
   // 全部落在整数米上，和相邻地块的边严丝合缝、彼此平行。
   group.add(slab(kit, HEADLAND_FILL, ['#8ca06a', 'grass']))
+  // 栈桥与南湾石台之间的水湾：西侧一段铺成草地，和四周地块严丝合缝。
+  group.add(slab(kit, BASIN_GRASS, ['#8ca06a', 'grass']))
   // 梯田西侧的水缝填平：和梯田同高（VILLAGE.upperY = 2 米），颜色用村长小屋那一片的绿。
   const [fillWest, fillEast, fillNorth, fillSouth] = TERRACE_WEST_FILL
   group.add(kit.box([(fillWest + fillEast) / 2, VILLAGE.upperY - 2.4, (fillNorth + fillSouth) / 2],
