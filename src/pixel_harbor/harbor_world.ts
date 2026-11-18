@@ -132,10 +132,12 @@ function addVillage(group: T.Group, kit: ModelKit) {
     const span = tier === 0 ? VILLAGE.ramp[0] + 28 : 38 - tier * 2.8
     const mid = tier === 0 ? (VILLAGE.ramp[0] - 28) / 2 : -9
     group.add(kit.box([mid, y - 0.62, z - 0.49], [span, 1.24, 0.55], STONE))
+    // 最右一列不种树：右侧是扩展出来的空地，一排树会同时挡住视线和走位。
+    const rightmost = Math.max(...lots.map(lot => lot.x))
     for (const { x, house, treeScale } of lots) {
       if (house) placeHouse(group, kit, { position: [x, y, z + 2.3],
         size: [house.width, house.height, 3.4], color: house.color })
-      addTree(group, kit, [x + 2.8, y, z + 2.7], treeScale)
+      if (x !== rightmost) addTree(group, kit, [x + 2.8, y, z + 2.7], treeScale)
     }
   }
 }
