@@ -29,6 +29,7 @@ type ControlOptions = {
   canLook: () => boolean
   canSteer: () => boolean
   lockPointer: () => boolean
+  leftLock: () => boolean
   sprintEnabled: () => boolean
   specialLook: { active: () => boolean; look: (dx: number,dy: number) => void; zoom: (direction: number)=>void }
   onInteract: () => void
@@ -40,13 +41,14 @@ function addLookInput(canvas: HTMLCanvasElement, actions: {
   zoom: (amount: number) => void
   pick: (pointer: T.Vector2) => void
   lockPointer: () => boolean
+  leftLock: () => boolean
 }) {
   const listeners = new AbortController()
   const { signal } = listeners
   let drag: { id: number; x: number; y: number; travel: number } | undefined
   canvas.addEventListener('pointerdown', event => {
     if (drag || event.button !== 0) return
-    if (event.pointerType === 'mouse' && actions.lockPointer() && !document.pointerLockElement && canvas.requestPointerLock) {
+    if (event.pointerType === 'mouse' && actions.leftLock() && !document.pointerLockElement && canvas.requestPointerLock) {
       const pending = canvas.requestPointerLock()
       if (pending) void pending.catch(() => canvas.focus({ preventScroll: true }))
       return
@@ -137,7 +139,7 @@ function readDirection(held: ReadonlyMap<string, MoveDirection>, analog: { x: nu
 }
 
 export function createControls({ canvas, motion, orbit, sailing, canJump, canMove, canLook, canSteer,
-  lockPointer, sprintEnabled, specialLook, onInteract, onPick, flight, canFly, flightEnabled }: ControlOptions) {
+  lockPointer, leftLock, sprintEnabled, specialLook, onInteract, onPick, flight, canFly, flightEnabled }: ControlOptions) {
   const held = new Map<string, MoveDirection>()
   const sprintKeys = new Set<string>()
   const analog = { x: 0, z: 0 }
@@ -177,6 +179,7 @@ export function createControls({ canvas, motion, orbit, sailing, canJump, canMov
     zoom(direction) { if (specialLook.active()) specialLook.zoom(-direction); else if (canLook()) orbit.zoom(direction) },
     pick: onPick,
     lockPointer,
+  leftLock,
   })
   orbit.update(motion.player, 0, true)
   return {

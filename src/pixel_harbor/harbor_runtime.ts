@@ -384,6 +384,8 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     canSteer: () => !transitionLocked && !menuOpen && activity.mode==='drive',
     sprintEnabled: ()=>!menuOpen,
     lockPointer: () => !fishing.active && !panelOpen && !scope.active,
+    // 左键只在第一人称时锁定；右键两种视角都能锁
+    leftLock: () => options.settings().view === 'first' && !fishing.active && !panelOpen && !scope.active,
     specialLook: { active:()=>scope.active,look:scope.look,zoom:scope.zoom },
     onInteract:interact,
     onPick(pointer) {
