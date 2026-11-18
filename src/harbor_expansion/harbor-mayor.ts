@@ -76,6 +76,10 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   addPipe(kit, actor.head)
   scene.add(actor.avatar)
 
+  // 小屋前的空地铺一层草地
+  const lawn = kit.box([-23.8, DECK + 0.015, -3.0], [12.4, 0.05, 13.6], ['#8ca06a', 'grass'])
+  scene.add(lawn)
+
   const chair = buildChair(kit)
   chair.rotation.order = 'YXZ'
   chair.rotation.y = MAYOR_CHAIR.yaw

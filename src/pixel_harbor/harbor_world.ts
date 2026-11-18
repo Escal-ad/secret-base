@@ -288,6 +288,15 @@ function addEastDockFittings(group: T.Group, kit: ModelKit) {
     group.add(kit.box([x, DECK + 0.60, 16.62], [0.26, 0.07, 0.26], ['#8a7a68']))
   }
   group.add(kit.box([16, DECK + 0.04, 16.34], [11.0, 0.12, 0.22], TIMBER))
+  // 渔民脚边的装鱼木桶：桶身 + 桶箍 + 里面的水和两条鱼
+  const bucketX = 14.9, bucketZ = 16.62
+  group.add(kit.cylinder([bucketX, DECK + 0.19, bucketZ], [0.26, 0.24, 0.38, 9], ['#7b6248']))
+  for (const y of [0.10, 0.30]) {
+    group.add(kit.cylinder([bucketX, DECK + y, bucketZ], [0.27, 0.27, 0.05, 9], ['#5d4a36']))
+  }
+  group.add(kit.box([bucketX, DECK + 0.36, bucketZ], [0.40, 0.04, 0.40], ['#4d6b73']))
+  group.add(kit.box([bucketX - 0.06, DECK + 0.40, bucketZ + 0.03], [0.20, 0.07, 0.09], ['#9aa6a8']))
+  group.add(kit.box([bucketX + 0.07, DECK + 0.40, bucketZ - 0.04], [0.17, 0.06, 0.08], ['#b0bbbd']))
 }
 
 // 树冠顶面：只提供站立支撑、不阻挡行走，所以 footprint 收进一点，
