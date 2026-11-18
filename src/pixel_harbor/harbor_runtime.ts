@@ -317,6 +317,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     if (player.airborne || !motion.teleport({ x,z })) return
     controls.clear()
     if (document.pointerLockElement === canvas) document.exitPointerLock()
+    player.sitting = true
     player.facing = Math.atan2(FISHING.float.x-player.x,FISHING.float.z-player.z)
     orbit.aim(null,{ yaw:player.facing+Math.PI, pitch:FISHING.pitch })
     canvas.focus({ preventScroll:true })
