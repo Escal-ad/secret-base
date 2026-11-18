@@ -6,10 +6,6 @@ export const RESIDENTS = {
   // TODO(reason): 待用户填写姓名、职业和招呼台词。
   people: [
     // build 是体型缩放；headwear 区分渔帽/头巾；apron 是围裙颜色，留空则没有。
-    { spot: [-21.2, -8.9], hair: '#443940', skin: '#c59172', shirt: '#ad795e', trousers: '#656a6b', hat: false,
-      build: [1.06, 0.94, 1.06], headwear: 'cap', apron: '#8a6a4f', name: '', job: '', line: '' },
-    { spot: [-20.4, -5.98], hair: '#7c6046', skin: '#e1b998', shirt: '#7e9d81', trousers: '#62637c', hat: false,
-      build: [0.94, 1.02, 0.94], headwear: 'bandana', apron: '#7b8fa0', name: '', job: '', line: '' },
     { spot: [-16.5, 3.8], hair: '#5e4274', skin: '#dca67f', shirt: '#ab9a6a', trousers: '#605145', hat: false,
       build: [0.86, 0.88, 0.86], headwear: 'none', name: '', job: '', line: '' },
     // 这位是船夫造型的渔民：站在东堤北缘、面朝海钓鱼，不再四处走动。
