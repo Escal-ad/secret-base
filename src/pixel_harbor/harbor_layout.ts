@@ -33,15 +33,15 @@ export const HEADLAND_FILL: Footprint = [-30, -17, -25, -21]
 // z 从 22（西岸南沿）到 44（第一层梯田的南端），正好把水槽补齐。
 export const TERRACE_WEST_FILL: Footprint = [-30, -28.5, 22, 44]
 export const SOUTH_QUAY: Footprint = [-18, 11, 11, 25]
-// 南湾石台的西半边（村长小屋那一侧）铺草地，东半边保持石板；
-// 两块在 x = -11.6 处拼缝，互不重叠。
-export const SOUTH_QUAY_GRASS: Footprint = [-18, -11.6, 11, 25]
+// 南湾石台的西半边（村长小屋那一侧）铺草地。西岸草地本身已经覆盖 x<=-12、z 11~22，
+// 所以这里只补它没盖到的 z 22~25 那一条，避免两块草地同高共面打架。
+export const SOUTH_QUAY_GRASS: Footprint = [-18, -12, 22, 25]
 // 东堤：南湾东侧伸进水里的石砌平台，与 SOUTH_QUAY 在 x = 11 处接上。
 // 这块石板在 harbor_world 的 addShore 里已经建好，加进 WALKABLE 后水域网格会自动扣除。
 export const EAST_DOCK: Footprint = [10.4, 22, 16.1, 19.9]
 // 可落脚的外岛（对应 ISLANDS.positions 第 1 与第 4 项），飞到岛上能站稳。
 const ISLAND_GROUND: Footprint[] = [[36.6, 49.4, -22.4, -13.6], [46.9, 69.1, 39.7, 54.3]]
-export const WALKABLE: readonly Footprint[] = [PIER, LANDING, WEST_BANK, HEADLAND, HEADLAND_FILL, TERRACE_WEST_FILL, SOUTH_QUAY, EAST_DOCK, ...ISLAND_GROUND,
+export const WALKABLE: readonly Footprint[] = [PIER, LANDING, WEST_BANK, HEADLAND, HEADLAND_FILL, TERRACE_WEST_FILL, SOUTH_QUAY, SOUTH_QUAY_GRASS, EAST_DOCK, ...ISLAND_GROUND,
   ...VILLAGE_PATHS, ...HILL.footprints]
 
 const RESPAWN_POINTS = [
