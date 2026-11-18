@@ -73,7 +73,7 @@ function buildSeatedMayor(kit: ModelKit) {
   // 躯干：整体后仰贴在椅背上
   const torso = new T.Group()
   torso.position.set(0, 0.55, -0.05)
-  torso.rotation.x = -0.58
+  torso.rotation.x = -0.42
   torso.add(kit.box([0, 0.20, 0], [0.36, 0.44, 0.26], COAT))
   torso.add(kit.box([0, 0.40, 0.02], [0.30, 0.10, 0.24], ['#5a6a76'])) // 领口
   group.add(torso)
@@ -92,7 +92,7 @@ function buildSeatedMayor(kit: ModelKit) {
   // 头：向后靠在椅背上，略微前倾打盹
   const head = new T.Group()
   head.position.set(0, 0.52, 0.03)
-  head.rotation.x = 0.34
+  head.rotation.x = 0.20
   head.add(kit.box([0, 0, 0], [0.26, 0.26, 0.24], SKIN))
   head.add(kit.box([0, 0.15, -0.01], [0.28, 0.07, 0.26], HAIR))
   head.add(kit.box([0, 0.10, 0], [0.30, 0.08, 0.28], BANDANA))
@@ -125,6 +125,7 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   scene.add(chair)
 
   const { group, head } = buildSeatedMayor(kit)
+  group.position.set(0, -0.05, -0.09)
   chair.add(group)
 
   const zMarks = [makeZMark(), makeZMark(), makeZMark()]
@@ -140,7 +141,7 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     // 睡着了头会缓慢点一下
     const target = Math.sin(rockTime * 0.5) * 0.06
     doze += (target - doze) * Math.min(1, step * 2)
-    head.rotation.x = 0.34 + doze
+    head.rotation.x = 0.20 + doze
     // Z 字上飘
     const calmer = night > 0.55 || rain > 0.35
     zMarks.forEach((mark, index) => {
