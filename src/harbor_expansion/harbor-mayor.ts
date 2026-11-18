@@ -106,7 +106,7 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
       const distance = Math.hypot(dx, dz)
       if (distance < MAYOR_NPC.hideDistance) {
         indoors = true
-        actor.avatar.visible = false
+        actor.avatar.visible = true   // 调试期强制可见，坐姿调好后再恢复
       } else {
         const pace = Math.min(MAYOR_NPC.walkSpeed * step, distance)
         pose.x += dx / distance * pace
