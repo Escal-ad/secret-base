@@ -337,7 +337,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
         person.sitting = true
         person.x = hotspot.x
         person.z = hotspot.z
-        person.height = 0.42
+        person.height = 0.56
         person.facing = Math.PI / 2
       }
       return
@@ -363,7 +363,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     canFly: () => !fishing.active && !panelOpen && !tracker.hasOpen() && !transitionLocked && !activity.mode && !scope.active && !door,
     flightEnabled: () => options.settings().flight,
     canJump: () => !fishing.active && !panelOpen && !tracker.hasOpen() && !transitionLocked && !activity.mode,
-    canMove: () => !fishing.active && !transitionLocked && !menuOpen && !scope.active && (activity.mode === null || activity.mode === 'lookout' || activity.mode==='drive'),
+    canMove: () => !motion.player.sitting && !fishing.active && !transitionLocked && !menuOpen && !scope.active && (activity.mode === null || activity.mode === 'lookout' || activity.mode==='drive'),
     canLook: () => !fishing.active && !transitionLocked && !panelOpen && (activity.mode !== 'sunset' && activity.mode !=='tour'),
     canSteer: () => !transitionLocked && !menuOpen && activity.mode==='drive',
     sprintEnabled: ()=>!menuOpen,
