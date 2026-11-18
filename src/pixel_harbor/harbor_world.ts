@@ -246,19 +246,27 @@ function addHelicopter(group: T.Group, kit: ModelKit) {
   heli.add(kit.box([0, 1.3, 2.3], [0.34, 0.34, 2.0], HELI_BLUE))
   heli.add(kit.box([0, 1.3, 2.3], [0.38, 0.12, 2.0], HELI_WHITE))
   heli.add(kit.box([0, 1.72, 3.15], [0.12, 0.92, 0.46], HELI_WHITE))
-  // 尾桨（竖盘）
+  // 尾桨（竖盘），装进子组以便旋转
+  const tailRotor = new T.Group()
+  tailRotor.position.set(0.18, 1.72, 3.15)
   for (const angle of [0, Math.PI / 2]) {
-    const blade = kit.box([0.18, 1.72, 3.15], [0.05, 0.92, 0.12], HELI_DARK)
+    const blade = kit.box([0, 0, 0], [0.05, 0.92, 0.12], HELI_DARK)
     blade.rotation.x = angle
-    heli.add(blade)
+    tailRotor.add(blade)
   }
-  // 主旋翼：桨毂 + 两片长桨
-  heli.add(kit.cylinder([0, 2.0, 0], [0.16, 0.2, 0.3, 8], HELI_DARK))
+  heli.add(tailRotor)
+  heli.userData.tailRotor = tailRotor
+  // 主旋翼：桨毂 + 两片长桨，装进子组以便旋转
+  const rotor = new T.Group()
+  rotor.position.set(0, 2.0, 0)
+  rotor.add(kit.cylinder([0, 0, 0], [0.16, 0.2, 0.3, 8], HELI_DARK))
   for (const angle of [0, Math.PI / 2]) {
-    const blade = kit.box([0, 2.16, 0], [5.0, 0.06, 0.26], HELI_DARK)
+    const blade = kit.box([0, 0.16, 0], [5.0, 0.06, 0.26], HELI_DARK)
     blade.rotation.y = angle
-    heli.add(blade)
+    rotor.add(blade)
   }
+  heli.add(rotor)
+  heli.userData.rotor = rotor
   // 起落橇
   for (const side of [-1, 1]) {
     heli.add(kit.box([side * 0.78, 0.06, 0.1], [0.12, 0.12, 2.5], HELI_DARK))

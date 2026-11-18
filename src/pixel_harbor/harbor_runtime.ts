@@ -284,7 +284,8 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
   const nearHelicopter = () => Math.hypot(player.x - heli.home.x, player.z - heli.home.z) < 5.5
   function parkHelicopter() {
     world.helicopter.position.set(heli.home.x, heli.home.y, heli.home.z)
-    world.helicopter.rotation.y = 0
+    world.helicopter.rotation.y = Math.PI
+    world.helicopter.visible = true
   }  let landOnPlatform: () => boolean = () => false
   const flight = createFlightMotion(player, createFlightSpace(obstacles, [
     ...cameraObstacles, ...world.flightVolumes, ...FOREST_FLIGHT_VOLUMES, ...HILL_FLIGHT_VOLUMES,
@@ -304,11 +305,20 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     player, () => extension.weather.frame.ice)
   const orbit = createOrbitCamera(camera, cameraObstacles)
   /** 飞行中把直升机挂到玩家脚下；不开的时候它停在停机坪上。 */
-  function syncHelicopter() {
-    if (!heli.riding) return
-    world.helicopter.position.set(player.x,
-      DECK + player.elevation + player.height - FLIGHT.heli.lift, player.z)
-    world.helicopter.rotation.y = player.facing
+  function syncHelicopter(step: number, firstPerson: boolean) {
+    const craft = world.helicopter
+    const rotor = craft.userData.rotor as T.Group | undefined
+    const tailRotor = craft.userData.tailRotor as T.Group | undefined
+    // 停机时怠速慢转，起飞后高速转
+    const spin = (heli.riding ? 26 : 3) * Math.min(step, 0.1)
+    if (rotor) rotor.rotation.y += spin
+    if (tailRotor) tailRotor.rotation.x += spin * 1.7
+    if (!heli.riding) { craft.visible = true; return }
+    craft.position.set(player.x, DECK + player.elevation + player.height - FLIGHT.heli.lift, player.z)
+    // 模型机头朝 -z，而玩家前进方向是 +z，所以要补半个圆周，否则按 W 会倒着飞
+    craft.rotation.y = player.facing + Math.PI
+    // 第一视角直接收起机身，视野零遮挡（和斗篷飞行一致）
+    craft.visible = !firstPerson
   }
   /** R 键：一键回到停机坪（连人带机） */
   function returnToHelipad() {
@@ -587,7 +597,7 @@ function createSceneFrame(options: RuntimeOptions, view: {
     const motionTime=reduced?0:elapsed
     const fishingArm = pastimes.update(player,{ step,frameTime,time:motionTime,night,low:low||!quality.flags.cloth,
       reduced,weather:prefs.weather })
-    session.syncHelicopter()
+    session.syncHelicopter(step, first.blend > 0.5)
     avatar(player, { fishingArm, settings: prefs, rain: weather.rain, first: first.blend, seconds: step,
       mounted: session.heliRiding(), reduced,
       simplified: !quality.flags.cloth, yaw: first.yaw, flying: flight.active, bank: flight.bank })
