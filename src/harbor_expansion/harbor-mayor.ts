@@ -144,7 +144,7 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     zMarks.forEach((mark, index) => {
       const phase = ((rockTime * 0.22) + index / zMarks.length) % 1
       const awake = seated && !indoors
-      mark.position.set(0.20 + phase * 0.26, 1.44 + phase * 0.86, 0)
+      mark.position.set(0.10 + phase * 0.18, 1.52 + phase * 0.70, -0.52 - phase * 0.18)
       mark.scale.setScalar(0.8 + phase * 0.7)
       const material = mark.material as T.MeshBasicMaterial
       material.opacity = awake ? Math.max(0, 1 - phase) * 0.95 : 0
