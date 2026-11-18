@@ -181,9 +181,11 @@ function helipadFenceRuns() {
   ] as [number, number, number, number][]
 }
 
-export const HELIPAD_OBSTACLES: Footprint[] = helipadFenceRuns().map(([x0, z0, x1, z1]) => [
+export const HELIPAD_OBSTACLES: Footprint[] = [...helipadFenceRuns().map(([x0, z0, x1, z1]) => [
   Math.min(x0, x1) - 0.08, Math.max(x0, x1) + 0.08,
-  Math.min(z0, z1) - 0.08, Math.max(z0, z1) + 0.08])
+  Math.min(z0, z1) - 0.08, Math.max(z0, z1) + 0.08] as Footprint),
+  // 直升机的机身与尾梁：整块挡掉，人只能从旁边绕
+  [HELIPAD.x - 0.9, HELIPAD.x + 0.9, HELIPAD.z - 1.85, HELIPAD.z + 3.4]]
 
 const HELIPAD_PAINT: Paint = ['#7a7d80', 'brick']
 const HELIPAD_MARK: Paint = ['#e9e7e0']
@@ -223,10 +225,52 @@ function addHelipadFence(group: T.Group, kit: ModelKit) {
   }
 }
 
+const HELI_BLUE: Paint = ['#4aa6cf']
+const HELI_WHITE: Paint = ['#eef1f2']
+const HELI_DARK: Paint = ['#343d43']
+const HELI_GLASS: Paint = ['#2e3a41']
+
+/** 停在停机坪上的蓝白直升机：机头朝 -z，白色机腹 + 海水蓝机身，四叶主旋翼和尾桨。 */
+function addHelicopter(group: T.Group, kit: ModelKit) {
+  const { x: padX, z: padZ, top } = HELIPAD
+  const heli = new T.Group()
+  heli.name = 'harbor-helicopter'
+  heli.position.set(padX, top + 0.09, padZ)
+  // 机身 + 白色机腹带
+  heli.add(kit.box([0, 1.15, 0.1], [1.5, 1.2, 2.5], HELI_BLUE))
+  heli.add(kit.box([0, 0.62, 0.1], [1.42, 0.3, 2.4], HELI_WHITE))
+  // 机头与驾驶舱玻璃
+  heli.add(kit.box([0, 1.26, -1.45], [1.16, 0.6, 0.5], HELI_BLUE))
+  heli.add(kit.box([0, 1.48, -1.66], [1.06, 0.42, 0.12], HELI_GLASS))
+  // 尾梁 + 白色尾带 + 垂尾
+  heli.add(kit.box([0, 1.3, 2.3], [0.34, 0.34, 2.0], HELI_BLUE))
+  heli.add(kit.box([0, 1.3, 2.3], [0.38, 0.12, 2.0], HELI_WHITE))
+  heli.add(kit.box([0, 1.72, 3.15], [0.12, 0.92, 0.46], HELI_WHITE))
+  // 尾桨（竖盘）
+  for (const angle of [0, Math.PI / 2]) {
+    const blade = kit.box([0.18, 1.72, 3.15], [0.05, 0.92, 0.12], HELI_DARK)
+    blade.rotation.x = angle
+    heli.add(blade)
+  }
+  // 主旋翼：桨毂 + 两片长桨
+  heli.add(kit.cylinder([0, 2.0, 0], [0.16, 0.2, 0.3, 8], HELI_DARK))
+  for (const angle of [0, Math.PI / 2]) {
+    const blade = kit.box([0, 2.16, 0], [5.0, 0.06, 0.26], HELI_DARK)
+    blade.rotation.y = angle
+    heli.add(blade)
+  }
+  // 起落橇
+  for (const side of [-1, 1]) {
+    heli.add(kit.box([side * 0.78, 0.06, 0.1], [0.12, 0.12, 2.5], HELI_DARK))
+    for (const z of [-0.7, 0.9]) heli.add(kit.box([side * 0.62, 0.4, z], [0.2, 0.62, 0.12], HELI_DARK))
+  }
+  group.add(heli)
+}
 function addVillage(group: T.Group, kit: ModelKit) {
   addCottages(group, kit)
   addHelipad(group, kit)
   addHelipadFence(group, kit)
+  addHelicopter(group, kit)
   // 守塔人小屋：从岬角西侧 (-8,-21) 往东挪到灯塔附近 (-2.69,-21.21)，门仍朝 +z（朝港口）。
   placeHouse(group, kit, { position: [-2.69, DECK, -21.21], size: HOUSE_SIZE, color: 2, yaw: Math.PI })
   placeHouse(group, kit, { position: [-24.7, DECK, -3], size: HOUSE_SIZE, color: 1, yaw: -Math.PI / 2 })
