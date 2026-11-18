@@ -337,7 +337,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
         person.sitting = true
         person.x = hotspot.x
         person.z = hotspot.z
-        person.height = 0.55
+        person.height = 0.72
         person.facing = Math.PI / 2
       }
       return
