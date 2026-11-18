@@ -318,6 +318,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     controls.clear()
     if (document.pointerLockElement === canvas) document.exitPointerLock()
     player.sitting = true
+    player.height = 0.30
     player.facing = Math.atan2(FISHING.float.x-player.x,FISHING.float.z-player.z)
     orbit.aim(null,{ yaw:player.facing+Math.PI, pitch:FISHING.pitch })
     canvas.focus({ preventScroll:true })
@@ -408,7 +409,12 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
   return { ...controls, player, places, sailing, flight, tracker, cameraObstacles, activity, getInteraction, scope,
     viewYaw: () => orbit.yaw,
     pastimes,
-    stopFishing() { fishing.stop(); canvas.focus({ preventScroll:true }) },
+    stopFishing() {
+      fishing.stop()
+      player.sitting = false
+      player.height = 0
+      canvas.focus({ preventScroll:true })
+    },
     openCatchRecords() {
       if (!fishing.active) return
       pastimes.showRecords()
