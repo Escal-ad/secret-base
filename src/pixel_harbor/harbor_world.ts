@@ -236,6 +236,12 @@ function addVillage(group: T.Group, kit: ModelKit) {
     const span = tier === 0 ? VILLAGE.ramp[0] + 28 : 38 - tier * 2.8
     const mid = tier === 0 ? (VILLAGE.ramp[0] - 28) / 2 : -9
     group.add(kit.box([mid, y - 0.62, z - 0.49], [span, 1.24, 0.55], STONE))
+    if (tier === 0) {
+      // 墙脚补一条草坎：西岸地面到 z=22 结束、挡墙从 z≈22.74 起，中间 0.7 米宽的缝里
+      // 会直接看到水面（烘焙格子因为墙顶 2 米而误判成陆地）。这里把缝填到墙底高度。
+      // 缝只出现在 x -28.5 ~ -18 这一段（再往东 z=22 处已经有南湾石台的地面）
+      group.add(kit.box([-23.25, 0.38, 22.4], [10.5, 0.76, 0.8], ['#8ca06a', 'grass']))
+    }
     // 最右一列不种树：右侧是扩展出来的空地，一排树会同时挡住视线和走位。
     const rightmost = Math.max(...lots.map(lot => lot.x))
     for (const { x, house, treeScale } of lots) {
