@@ -27,7 +27,7 @@ function growForest() {
 }
 
 // 需要单独剔除的树（逐个坐标点名删除）
-const TREE_EXCLUSIONS: readonly (readonly [number, number])[] = [[-15.65, -24.29]]
+const TREE_EXCLUSIONS: readonly (readonly [number, number])[] = [[-15.65, -24.29], [-10.99, -20.67]]
 const clusters = growForest().map(cluster => ({
   ...cluster,
   trees: cluster.trees.filter(tree =>
