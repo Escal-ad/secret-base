@@ -1,12 +1,12 @@
 // 钓鱼点移到东堤渔民身旁，面朝南侧水域
-const FISH_STAND = { x: 21.70, z: 17.71 }
+const FISH_STAND = { x: 21.80, z: 17.87 }
 const WISH_STAND = { x: 5.70, z: -16.60 }
 const WISH_ALTAR = { x: WISH_STAND.x + 0.90, z: WISH_STAND.z - 0.38 }
 
 export const FISHING = {
   place: { id: 'fishing', kind: 'fishing', ...FISH_STAND, radius: 0.60, label: '钓鱼' },
   title: '钓鱼点', blurb: '在栈桥边抛竿，浮漂下沉时收竿。', anchor: [FISH_STAND.x, 1.9, FISH_STAND.z] as const,
-  float: { x: 23.90, z: 17.71 }, castSeconds: 0.58, reelSeconds: 0.28, waitSeconds: [3, 10], responseSeconds: 1.5,
+  float: { x: 24.00, z: 17.87 }, castSeconds: 0.58, reelSeconds: 0.28, waitSeconds: [3, 10], responseSeconds: 1.5,
   storageKey: 'pixel_harbor_catches', pitch: 0.54,
   ui: { casting: '正在抛竿…', waiting: '留意水面上的浮漂', reeling: '正在收竿…', bite: '咬钩了！按 E 或点击收竿', miss: '鱼跑了',
     reel: '收竿', recast: '再抛一竿', record: '渔获记录', exit: '结束钓鱼', result: '钓到了！',
