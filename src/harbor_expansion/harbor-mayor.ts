@@ -100,6 +100,8 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   }
   const SIT_WORLD = new T.Vector3()
   const HIP_HEIGHT = 0.46
+  // 整体抬升量：唯一需要手调的补偿，坐高了调小、坐低了调大
+  const SEAT_LIFT = 0.14
   let rockTime = 0
   let indoors = false
   let seated = true
@@ -159,7 +161,7 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
     if (seated && !indoors) {
       // 直接用座位锚点的世界坐标对位：人在座面上，随椅子一起摇
       seat.getWorldPosition(SIT_WORLD)
-      actor.avatar.position.set(SIT_WORLD.x, SIT_WORLD.y - HIP_HEIGHT, SIT_WORLD.z)
+      actor.avatar.position.set(SIT_WORLD.x, SIT_WORLD.y - HIP_HEIGHT + SEAT_LIFT, SIT_WORLD.z)
       actor.avatar.rotation.y = MAYOR_NPC.restYaw
     }
     actor.detailAnchor.rotation.x += seated && !indoors ? rock : 0
