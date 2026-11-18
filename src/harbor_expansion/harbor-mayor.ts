@@ -125,6 +125,8 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   scene.add(chair)
 
   const { group, head } = buildSeatedMayor(kit)
+  // 整体往座面方向贴合：下沉约一个巴掌，略微后靠贴住椅背
+  group.position.set(0, -0.09, -0.07)
   chair.add(group)
 
   const zMarks = [makeZMark(), makeZMark(), makeZMark()]
