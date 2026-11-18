@@ -79,7 +79,8 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   const chair = buildChair(kit)
   chair.rotation.order = 'YXZ'
   chair.rotation.y = MAYOR_CHAIR.yaw
-  chair.position.set(MAYOR_CHAIR.x, DECK, MAYOR_CHAIR.z)
+  // 地形高度必须算进去，否则椅子里会埋到地下看不见
+  chair.position.set(MAYOR_CHAIR.x, DECK + groundElevation(MAYOR_CHAIR.x, MAYOR_CHAIR.z), MAYOR_CHAIR.z)
   scene.add(chair)
   let chairTime = 0
 
