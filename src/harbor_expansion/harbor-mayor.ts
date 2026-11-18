@@ -20,6 +20,8 @@ export const MAYOR_NPC = {
   hideDistance: 0.55,
 } as const
 
+export const MAYOR_CHAIR = { x: -22.15, z: 0.55, yaw: Math.PI / 2, elevation: DECK }
+
 const PIPE: Paint = ['#6b4a34']
 const BOWL: Paint = ['#4a3324']
 const EMBER: Paint = ['#d8894a']
@@ -34,6 +36,38 @@ function addPipe(kit: ModelKit, head: T.Group) {
   head.add(kit.box([0.02, 1.17, 0.37], [0.03, 0.012, 0.03], EMBER))
 }
 
+const FRAME: Paint = ['#8a6b4e', 'wood']
+const CLOTH: Paint = ['#c8b79a', 'wood']
+
+/** 村长小屋门前的摇椅：座面、靠背、弧形底座 */
+function buildChair(kit: ModelKit) {
+  const chair = new T.Group()
+  chair.add(kit.box([0, 0.28, 0], [0.92, 0.10, 0.56], FRAME))
+  chair.add(kit.box([0, 0.36, 0], [0.80, 0.06, 0.48], CLOTH))
+  const back = kit.box([0, 0.95, -0.69], [0.94, 1.10, 0.10], FRAME)
+  back.rotation.x = -0.62
+  const crest = kit.box([0, 1.50, -0.79], [1.02, 0.10, 0.14], FRAME)
+  crest.rotation.x = -0.62
+  chair.add(crest, back)
+  for (const side of [-1, 1]) {
+    chair.add(kit.box([side * 0.42, 0.14, 0.22], [0.08, 0.28, 0.08], FRAME))
+    chair.add(kit.box([side * 0.42, 0.20, -0.24], [0.08, 0.40, 0.08], FRAME))
+  }
+  const SEGMENT_COUNT = 9
+  const SPAN = 1.34
+  const SEG_LEN = SPAN / SEGMENT_COUNT
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < SEGMENT_COUNT; i++) {
+      const u = (i + 0.5) / SEGMENT_COUNT - 0.5
+      const lift = 0.16 * u * u * 4
+      const seg = kit.box([side * 0.42, 0.04 + lift, u * SPAN], [0.09, 0.06, SEG_LEN + 0.012], FRAME)
+      seg.rotation.x = -u * 1.15
+      chair.add(seg)
+    }
+  }
+  return chair
+}
+
 export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   const actor = createHarborAvatar(kit, {
     hair: '#cdc6bd', skin: '#d9b394', shirt: '#4d5a68', trousers: '#3d454e',
@@ -41,6 +75,13 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   })
   addPipe(kit, actor.head)
   scene.add(actor.avatar)
+
+  const chair = buildChair(kit)
+  chair.rotation.order = 'YXZ'
+  chair.rotation.y = MAYOR_CHAIR.yaw
+  chair.position.set(MAYOR_CHAIR.x, DECK, MAYOR_CHAIR.z)
+  scene.add(chair)
+  let chairTime = 0
 
   const [startX, startZ] = MAYOR_NPC.route[0]
   const pose: HarborPlayer = {
@@ -54,6 +95,9 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   let pause = 0
 
   return (night: number, rain: number, step: number, reduced: boolean) => {
+    // 空椅子也轻轻晃，看起来像有人在刚起身
+    chairTime += step
+    chair.rotation.x = Math.sin(chairTime * 1.1) * 0.045
     const retreat = night > MAYOR_NPC.nightFrom || rain > MAYOR_NPC.rainFrom
 
     if (retreat && !indoors) {
@@ -108,4 +152,3 @@ export function addHarborMayor(scene: T.Scene, kit: ModelKit) {
   }
 }
 
-export const MAYOR_CHAIR = { x: -22.15, z: 0.55, yaw: Math.PI / 2, elevation: DECK }
