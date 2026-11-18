@@ -259,8 +259,7 @@ export const HARBOR_STRUCTURES = [
 
 // 后村梯田里参与行走碰撞的那批房屋（tier 0），顶面高度按「相对地形」给出。
 export const TERRACE_ROOFS: { footprint: Footprint; height: number }[] = TERRACE_HOUSES
-  .filter(house => house.base === VILLAGE.upperY)
-  .map(house => ({ footprint: house.footprint, height: house.height }))
+  .map(house => ({ footprint: house.footprint, height: (house.base ?? VILLAGE.upperY) - VILLAGE.upperY + house.height }))
 
 export const WORLD_OBSTACLES: Footprint[] = [
   ...HARBOR_STRUCTURES.map(structure => structure.footprint),
