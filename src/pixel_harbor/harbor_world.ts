@@ -115,7 +115,6 @@ function addShore(group: T.Group, kit: ModelKit) {
   group.add(slab(kit, [WEST_BANK[1], SOUTH_QUAY[1], SOUTH_QUAY[2], SOUTH_QUAY[3]], ['#8ca06a', 'grass']))
   group.add(slab(kit, SOUTH_QUAY_GRASS, ['#8ca06a', 'grass']))
   group.add(slab(kit, [10.4, 22, 16.1, 19.9], STONE))
-  group.add(kit.box([-10, DECK - 0.012, 12.2], [31, 0.026, 2.4], ['#c7b299', 'brick']))
   for (let index = 0; index < 18; index++) {
     // 西岸那排礁石从岸线（x = -12）外侧起步：最西那块原本整块躺在草地上，像嵌进了陆地。
     // 随机值照常取，只是不放第一块，避免后面的石头尺寸全部错位。
