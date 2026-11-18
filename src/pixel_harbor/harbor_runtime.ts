@@ -350,6 +350,10 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     const special = extension.gulls.hotspot(player) ?? extension.residents.hotspot(player)
     if (special) return special
     if (nearby && nearby.kind !== 'landmark') return nearby
+    // 站在停机坪旁边：按 E 驾驶直升机
+    if (Math.hypot(player.x - heli.home.x, player.z - heli.home.z) < 4.6) {
+      return { kind: 'heli', id: 'heli', label: FLIGHT.heli.label, x: heli.home.x, z: heli.home.z, radius: 4.6 } satisfies Hotspot
+    }
     // 站在码头岸上：按 E 上船（泊位决定哪条船）。
     const berth = sailing.nearbyDock()
     if (berth) return { kind: 'dock', id: berth.id, label: SAILING.boardLabel,
@@ -385,6 +389,14 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
       return
     }
     if (hotspot.kind==='dock'){options.onActivityRequest(player.sailing?'dock':'board');return}
+    if (hotspot.kind === 'heli') {
+      if (flight.active) return
+      motion.clear()
+      canvas.focus({ preventScroll: true })
+      flight.toggle()
+      options.onFlightNotice(FLIGHT.heli.start)
+      return
+    }
     if (hotspot.kind==='chair') {
       const person = motion.player
       if (person.sitting) {

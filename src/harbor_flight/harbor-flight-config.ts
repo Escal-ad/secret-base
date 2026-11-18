@@ -7,7 +7,8 @@ export const FLIGHT = {
   propHeight: 1.10,
   camera: { distance: 1.45, pitch: 0.23 },
   // 开直升机：镜头额外拉远 cameraPull、俯角再压 pitchPull；lift 是驾驶舱离机腹起落橇的高度
-  heli: { cameraPull: 4.2, pitchPull: 0.1, lift: 0.05, home: '已回到停机坪', missing: '直升机停在停机坪上，先走过去再按 F' },
+  heli: { cameraPull: 4.2, pitchPull: 0.1, lift: 0.05, label: '驾驶直升机', start: '直升机已发动',
+    home: '已回到停机坪', missing: '直升机停在停机坪上，先走过去再按 F' },
   cape: {
     color: '#C0392B', rows: 4, maxSegments: 8, alwaysVisible: false, transition: 0.4,
     shoulder: 1.09, rootBack: -0.21, width: 0.244, length: 0.22, thickness: 0.058,
