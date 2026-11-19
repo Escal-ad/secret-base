@@ -3,3 +3,19 @@
 html { min-width: 320px; }
 body { min-width: 320px; min-height: 100vh; margin: 0; }
 button, a { -webkit-tap-highlight-color: transparent; }
+
+/* 手机竖屏提示：3D 场景在竖屏下太窄，引导横过来 */
+@media (pointer: coarse) and (orientation: portrait) {
+  body::after {
+    content: "请把手机横过来，体验会好很多";
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    padding: 10px 14px;
+    background: rgba(33, 30, 34, 0.8);
+    color: #fff4d6;
+    font-size: 14px;
+    text-align: center;
+    z-index: 9999;
+    pointer-events: none;
+  }
+}

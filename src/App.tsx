@@ -5,6 +5,7 @@ import { ProfileDiagnostics } from './pixel_harbor/harbor-profile-content'
 import { HarborEntry, HarborLoading } from './harbor_shell/harbor-entry'
 import { createHarborAudio } from './harbor_shell/harbor-audio'
 import { useHarborSettings } from './harbor_shell/harbor-settings'
+import { lockLandscape } from './harbor_shell/harbor-mobile'
 import './pixel_harbor/harbor_site.css'
 import './harbor_shell/harbor-shell.css'
 
@@ -51,7 +52,8 @@ export default function App() {
     setPage(next)
   }, [])
   const read = useCallback(() => switchPage('read'), [switchPage])
-  function enter() { void audio.unlock(); switchPage('scene') }
+  // 手机上首次点击时请求全屏 + 锁横屏（浏览器要求用户手势）
+  function enter() { void audio.unlock(); void lockLandscape(); switchPage('scene') }
   if (page === 'entry') return <>
     {warning && <p className="site-warning" role="status">{warning}</p>}
     <HarborEntry settings={values} onUpdate={update} onEnter={enter} onRead={read} />
