@@ -26,6 +26,8 @@ export default function App() {
   const { values, warning, update } = settings
   useEffect(() => {
     if (page === 'entry') audio.prepare()
+    // 直接进 3D 场景时没有点击事件，先把音频上下文建起来，第一次点击就能出声
+    if (page === 'scene') void audio.unlock()
     if (page !== 'scene') audio.sync({ settings: values, scene: { night: false, weather: 'clear' } })
   }, [audio, page, values])
   useEffect(() => {
