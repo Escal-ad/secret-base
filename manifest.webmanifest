@@ -1,0 +1,17 @@
+{
+  "name": "Excal's Secret Base",
+  "short_name": "Secret Base",
+  "description": "阶梯岬角上的像素渔港：栈桥、灯塔、梯田与云上小岛。",
+  "lang": "zh-CN",
+  "start_url": "/secret-base/",
+  "scope": "/secret-base/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#f7f1e2",
+  "theme_color": "#779da7",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
