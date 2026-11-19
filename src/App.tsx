@@ -42,6 +42,14 @@ export default function App() {
       audio.dispose()
     }
   }, [audio])
+  // 手机上进 3D 场景后，第一次触摸就请求全屏 + 锁横屏（浏览器要求手势）
+  useEffect(() => {
+    if (page !== 'scene') return
+    if (!window.matchMedia('(pointer: coarse)').matches) return
+    const once = () => { void lockLandscape(); window.removeEventListener('pointerup', once) }
+    window.addEventListener('pointerup', once)
+    return () => window.removeEventListener('pointerup', once)
+  }, [page])
   const switchPage = useCallback((next: Page) => {
     const url = new URL(location.href)
     if (next === 'read') url.searchParams.set('mode','read')
