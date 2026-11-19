@@ -10,9 +10,10 @@ const TRAIL: Paint = ['#b28b63', 'wood']
 const RAIL: Paint = ['#88664e', 'wood']
 const BENCH_RADIUS = 0.56
 const RAIL_DEPTH = 0.12
+// 东侧那道 x=12 的栏杆删掉了：梯田草皮只铺到 x=10.5，这道栏干整根悬在海上 1.5 米，
+// 底下没有任何东西接着，看着像漂浮的横杆。西侧 x=-18 那道在草皮上，保留。
 const RAILS = [
   { x: -18, near: 23.3, far: VILLAGE.terrace[3] },
-  { x: VILLAGE.terrace[1], near: 24.0, far: VILLAGE.terrace[3] },
 ]
 const RAMP_RAILS = [VILLAGE.ramp[0], VILLAGE.ramp[1]].map((x): Footprint =>
   [x - RAIL_DEPTH / 2, x + RAIL_DEPTH / 2, VILLAGE.ramp[2], VILLAGE.terrace[2]])
@@ -49,10 +50,7 @@ function addBench(group: T.Group, kit: ModelKit) {
   bench.position.set(SUNSET.seat.x, DECK + groundElevation(SUNSET.seat.x,SUNSET.seat.z), SUNSET.seat.z)
   bench.rotation.y = Math.atan2(SUNSET.direction[0], SUNSET.direction[2])
   group.add(bench)
-  const { x,z } = SUNSET.sign
-  const floor = groundElevation(x,z)
-  group.add(nameplate(SUNSET.title, [x, floor+1.56, z], -0.7))
-  group.add(kit.box([x, floor+1.10, z], [0.13, 0.92, 0.13], RAIL))
+  // 山顶那块「落日观景点」木牌和它的柱子已经撤掉：按用户要求山顶只留长凳和大枫树。
 }
 
 export function addHarborLandmarks(world: T.Group, kit: ModelKit) {

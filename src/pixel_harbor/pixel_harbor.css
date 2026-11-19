@@ -337,3 +337,37 @@
   .harbor-panel-scrim, .harbor-detail, .pixel-harbor .harbor-place-label { transition: none; }
   .pixel-harbor :is(.harbor-header, .harbor-title) { transition: none; }
 }
+
+/* 右下角常驻的背包角标：总件数 + 悬停看明细 */
+.harbor-bag {
+  position: fixed;
+  right: max(14px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--scene-paper);
+  color: var(--scene-ink);
+  border: 2px solid var(--scene-border);
+  font-size: var(--harbor-hint-min-font);
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+.harbor-bag-count { font-weight: 700; }
+/* 村长小屋：联系方式三行 */
+.mayor-contact { display: grid; gap: 10px; margin: 6px 0 0; padding: 0; list-style: none; }
+.mayor-contact li { display: grid; grid-template-columns: 72px 1fr; align-items: baseline; gap: 10px; }
+.mayor-contact strong { font-weight: 700; opacity: 0.75; }
+.mayor-contact a { text-decoration: underline; }
+/* 村长小屋面板：用《小王子》那张沙地插画打底 */
+.pixel-harbor .harbor-detail:has(.mayor-contact) {
+  background-image: url("mayor-panel.png");
+  background-size: cover;
+  background-position: center 62%;
+  background-repeat: no-repeat;
+}
+.pixel-harbor .harbor-detail:has(.mayor-contact) :is(h2, h3, p, li, strong, span, a) {
+  text-shadow: 0 1px 2px rgba(255, 252, 240, 0.9);
+}

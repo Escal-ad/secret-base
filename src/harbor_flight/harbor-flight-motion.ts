@@ -80,10 +80,7 @@ export function createFlightMotion(player: HarborPlayer, space: FlightSpace, hoo
     }
     return result
   }
-  function requestLanding() {
-    warned = false
-    if (typeof landingFloor() === 'number') phase = 'land'
-  }
+  
 
   function update(step: number, input: FlightInput, yaw: number) {
     if (phase === 'ground' || step <= 0) return
@@ -135,7 +132,17 @@ export function createFlightMotion(player: HarborPlayer, space: FlightSpace, hoo
     get speed() { return speed },
     toggle() {
       if (phase === 'land') { phase = 'air'; return }
-      if (phase !== 'ground') { requestLanding(); return }
+      if (phase !== 'ground') {
+        // 空中再按 F：收起斗篷、保持当前高度自由下落（给滑翔留出窗口），不再自动落地
+        const y = point.y
+        phase = 'ground'
+        hooks.change(false)
+        hooks.notice('斗篷收起——按住空格滑翔')
+        player.height = Math.max(0, y - DECK - groundElevation(player.x, player.z))
+        player.airborne = true
+        clear()
+        return
+      }
       Object.assign(point, { x: player.x, z: player.z, y: DECK + player.elevation + player.height })
       takeoff = { x: player.x, z: player.z }
       phase = 'launch'

@@ -81,8 +81,19 @@ export function addHarborIslands(scene: T.Scene, kit: ModelKit) {
         // 绕各自最近的岛转圈：半径按岛宽推算，速度比原航线更快。
         const site = ISLANDS.positions[i % ISLANDS.positions.length]
         const [cx, cz, width] = site
-        const radius = width * 0.9 + 2.6
-        const angle = time * 0.16 + i * 1.3
+        // 每条船用不同的半径和相位，绕岛时不会挤在同一条轨迹上
+        const radius = width * 0.9 + 3.4 + i * 2.2
+        let angle = time * 0.16 + i * 1.3
+        // 与其它船太近就把相位错开一点（简单的避让）
+        for (const other of ships.keys()) {
+          if (other === i) continue
+          const site2 = ISLANDS.positions[other % ISLANDS.positions.length]
+          const r2 = site2[2] * 0.9 + 3.4 + other * 2.2
+          const a2 = time * 0.16 + other * 1.3
+          const dx = (cx + Math.cos(angle) * radius) - (site2[0] + Math.cos(a2) * r2)
+          const dz = (cz + Math.sin(angle) * radius) - (site2[1] + Math.sin(a2) * r2)
+          if (Math.hypot(dx, dz) < 7) angle += 0.28
+        }
         object.position.set(cx + Math.cos(angle) * radius, 0.04 + Math.sin(time + i) * 0.03,
           cz + Math.sin(angle) * radius)
         object.rotation.y = -angle + Math.PI * 0.5

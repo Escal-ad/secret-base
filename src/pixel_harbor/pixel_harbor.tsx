@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 import { HarborActivityHud } from './harbor-activity-hud'
 import { HarborCaptainDialogue } from './harbor-captain-dialogue'
@@ -18,13 +18,15 @@ import type { Settings } from '../harbor_shell/harbor-settings'
 import { HarborLoading } from '../harbor_shell/harbor-entry'
 import { config } from '../site-config'
 import { PLACE_LABELS } from './harbor_places_config'
+// 展览公告栏的正文：介绍渔港的地貌与由来
+const NOTICE_TEXT = '这座渔港建在一段阶梯状的岬角上，从南湾的木栈桥一直望得到东边的灯塔。\n\n主要地貌：\n一、南湾栈桥 —— 从码头向北伸出的木结构栈桥，两侧系船柱可以停泊渔船，尽头是日出观景台。\n二、灯塔岬角 —— 东侧岬角上的红白条纹灯塔，夜里会亮起旋转的灯，是整片海湾的航标。\n三、后村梯田 —— 四层逐级抬升的平台，从下往上依次是北欧尖顶屋、青砖四合院、浅紫宫殿与顶层的停机坪。\n四、西岸与后山 —— 西侧是一整片岸地，村长小屋、小卖部与算子铺都在这儿，再往西是枫林覆盖的后山。\n五、内湾与浅滩 —— 码头内侧水域较浅，退潮时露出礁石，浅水里能摸到贝壳与小螃蟹。'
 import { HarborGuidance } from './harbor-guidance'
 import { HarborFlightHud } from '../harbor_flight/harbor-flight-hud'
-import { FLIGHT } from '../harbor_flight/harbor-flight-config'
 import { SCOPE } from '../harbor_expansion/harbor-scope-config'
 import { HarborFishingHud } from '../harbor_pastimes/harbor-fishing-hud'
 import { HarborCatchPanel } from '../harbor_pastimes/harbor-catch-panel'
 import { HarborWishPanel } from '../harbor_pastimes/harbor-wish-panel'
+import { bagSummary, bagTotal } from '../harbor_expansion/harbor-inventory'
 import './pixel_harbor.css'
 import '../harbor_pastimes/harbor-pastimes.css'
 import '../harbor_shell/harbor-interactivity.css'
@@ -35,7 +37,10 @@ type Shell = { onRead:()=>void; settings:Settings; updateSettings:(changes:Parti
 function resolveDetail(hotspot: Hotspot, artworks: HarborArtwork[]): HarborDetail | undefined {
   switch (hotspot.kind) {
     case 'portfolio': return { artworks }
-    case 'notice': return { label: PLACE_LABELS.places.notice.title, note: PLACE_LABELS.places.notice.blurb }
+    case 'notice': return { label: PLACE_LABELS.places.notice.title, note: NOTICE_TEXT }
+    case 'cow': return { label: '牛圈', note: '牛圈里养着两头奶牛。站在栏杆边按 E 可以挤一桶牛奶。' }
+    case 'stargaze': return { label: hotspot.title, note: hotspot.note }
+    case 'shop': return { label: hotspot.title, note: hotspot.note }
     case 'eval': return { evaluation: true }
     case 'landmark': return hotspot
     case 'resident': return { label: hotspot.title, note: hotspot.note ?? '待填写' }
@@ -60,6 +65,26 @@ function getHarborStyle(night: boolean) {
   } as CSSProperties
 }
 
+function HarborBag() {
+  const [bag, setBag] = useState({ total: -1, text: '' })
+  useEffect(() => {
+    const read = () => setBag(current => {
+      const total = bagTotal()
+      const text = bagSummary()
+      return current.total === total && current.text === text ? current : { total, text }
+    })
+    read()
+    const timer = window.setInterval(read, 400)
+    return () => window.clearInterval(timer)
+  }, [])
+  if (bag.total <= 0) return null
+  return <div className='harbor-bag' role='status' title={'背包：' + bag.text}
+    aria-label={'背包里共 ' + bag.total + ' 件'}>
+    <span aria-hidden='true'>背包</span>
+    <span className='harbor-bag-count'>{bag.total}</span>
+  </div>
+}
+
 function HarborHeader({ scene }: { scene: Scene }) {
   return (
     <header className="harbor-header">
@@ -79,7 +104,10 @@ function HarborInteraction({ scene, hint, flightEnabled }: { scene: Scene; hint:
   return <>
     {mode !== 'tour' && mode !== 'sunset' && !scene.scope && <div className="harbor-controls">
       <p className="harbor-desktop-help">{mode==='drive' ? <>W/↑ 加速 · S/↓ 倒车 · A/D 转向</> :
-        flying ? FLIGHT.ui.keys : <><kbd>WASD</kbd> 移动 · <kbd>V</kbd> 视角 · <kbd>M</kbd> 地图{flightEnabled && <> · <kbd>F</kbd> 飞行</>}</>}</p>
+        flying ? '在飞行中——WASD 移动 · 空格上升 · Ctrl / C 下降'
+          : scene.runtime?.player.airborne
+            ? '在滑翔中——按住<kbd>空格</kbd>滑翔 · <kbd>WASD</kbd> 调整方向'
+            : <><kbd>WASD</kbd> 移动 · <kbd>V</kbd> 视角 · <kbd>M</kbd> 地图 · <kbd>Q</kbd> 昼夜 · <kbd>T</kbd> 天气{flightEnabled && <> · <kbd>F</kbd> 飞行</>}</>}</p>
       <HarborJoystick onMove={(x, z) => runtime?.moveAnalog(x, z)} />
       <p className="harbor-touch-help">滑动环视</p>
     </div>}
@@ -146,7 +174,8 @@ function useSceneShortcuts(scene:Scene, shell:Shell) {
         else scene.panels.open('menu')
       }
       if(!scene.panels.panel && !scene.scope && event.code==='KeyV') shell.updateSettings({view:shell.settings.view==='first'?'third':'first'})
-      if(!scene.panels.panel && event.code==='KeyT') shell.updateSettings({weather:shell.settings.weather==='clear'?'rain':shell.settings.weather==='rain'?'snow':'clear'})
+      if(!scene.panels.panel && event.code==='KeyQ') scene.lighting.toggle()
+      if(!scene.panels.panel && event.code==='KeyT') shell.updateSettings({weather:shell.settings.weather==='clear'?'rain':shell.settings.weather==='rain'?'snow':shell.settings.weather==='snow'?'storm':'clear'})
     }
     window.addEventListener('keydown',onKey)
     return ()=>window.removeEventListener('keydown',onKey)
@@ -204,6 +233,7 @@ export function PixelHarbor(shell: Shell) {
         {mode && mode!=='drive' && !scene.scope && <HarborActivityHud mode={mode} cue={cue} places={scene.runtime?.places ?? []}
           onFocus={id => scene.runtime?.focusPlace(id) ?? null} onAction={action} />}
       </>}
+      <HarborBag />
       <ScopeHud scene={scene}/>
       <ScenePanel scene={scene} shell={shell} travelControls={travelControls} />
       <div ref={overlay} className="harbor-travel-scrim" aria-hidden="true" />

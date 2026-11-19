@@ -9,9 +9,12 @@ export const CAPTAIN = {
     headwear: 'souwester', headwearColors: { crown: '#a97b3c', band: '#6f4f28' },
     rope: { color: '#d3b88a' } },
   anchor: [1.02, 2.68, 12.29],
-  facing: 2.86,
-  wavePeriod: 13,
-  waveLength: 1.6,
+  // 改成「坐守渔船」：跟守塔人一样坐在凳子上不动，坐高与守塔人、东堤钓位统一 0.30。
+  // guardYaw 让他面朝南湾泊位里那条绿船（泊位在座位西南 1.3 / 2.9 米处）。
+  seatHeight: 0.30,
+  guardYaw: Math.atan2(-0.3 - 1.02, 9.4 - 12.29),
+  // 天黑点亮的小灯：灯杆在他右手边，和守塔人那盏同款，nightFrom 与守塔人一致。
+  guardLamp: { x: 1.62, z: 12.29, nightFrom: 0.5, color: '#ffd79b' },
   letterMs: 28,
   visitedKey: 'pixel_harbor_visited',
   storageReadError: '无法读取已访问地点，本次会话仍会记录。',

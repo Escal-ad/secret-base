@@ -10,7 +10,8 @@ export const AUDIO = {
   musicFolder: 'assets/audio/music/', sfxFolder: 'assets/audio/sfx/',
   credits: 'assets/audio/music/CREDITS.json', license: 'assets/audio/music/LICENSE_CC0.txt',
   tracks: ['boy', 'baguira', 'sudo'], bytes: 10 * 1024 * 1024,
-  mapping: { default: 'boy', night: 'sudo', rain: 'sudo', snow: 'sudo',
+  // 晴天白天：欢快（boy）；雨/雪/雷阵雨：低落（baguira）；夜晚：emo（sudo）
+  mapping: { default: 'boy', night: 'sudo', rain: 'baguira', storm: 'baguira', snow: 'baguira',
     tour: 'baguira', drive: 'baguira', lookout: 'baguira', telescope: 'baguira', flight: '' } satisfies Record<string, Track | ''>,
   overlap: 4, crossfade: 2.5, hold: 30, scheduleMs: 150, scheduleAhead: 0.32,
   dialogueGain: 0.62, weatherGain: 0.78, response: 0.25,

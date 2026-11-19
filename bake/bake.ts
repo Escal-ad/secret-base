@@ -12,7 +12,7 @@ import { addHarborForest } from '../src/pixel_harbor/harbor_forest'
 import { addHarborIslands } from '../src/harbor_expansion/harbor-islands'
 import { MAP } from '../src/harbor_expansion/harbor-map-config'
 
-const RES = 1          // 网格精度（米）
+const RES = 0.5        // 网格精度（米）
 const RAY_TOP = 80     // 射线起点高度
 const RAY_BOTTOM = -20 // 射线终点高度（低于即视为海）
 const SUB = [0.18, 0.5, 0.82]

@@ -183,7 +183,7 @@ export function createControls({ canvas, motion, orbit, sailing, canJump, canMov
   })
   orbit.update(motion.player, 0, true)
   return {
-    moveAnalog, interact: onInteract, clear, jump, toggleFlight,
+    moveAnalog, interact: onInteract, clear, jump, glide: (active: boolean) => motion.glide(active), unstuck: () => motion.unstuck(), boost: (speed: number) => motion.boost(speed), toggleFlight,
     setFlightVertical(direction: number, pressed: boolean) {
       if (pressed) touchVertical.add(direction)
       else touchVertical.delete(direction)

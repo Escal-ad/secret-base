@@ -60,8 +60,9 @@ export function HarborMap({ places, player, image, onTravel, onGuide }: Props) {
             onClick={event => {
               if (event.detail && !map.canSelect()) return
               lastMarker.current = event.currentTarget
-              setSelected(place)
-            }}><span aria-hidden="true">◆</span></button>
+              // 点到传送点就直接过去，不再先弹面板
+              onTravel(place)
+            }}><span aria-hidden="true" /></button>
           <span className="map-marker-name" aria-hidden="true" style={{
             left: Math.max(0, Math.min(point.x - MAP_UI.markerSpacing, size.width - MAP_UI.markerSpacing * 2)),
             top: point.y, width: MAP_UI.markerSpacing * 2,

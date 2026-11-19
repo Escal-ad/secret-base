@@ -1,5 +1,6 @@
 import { dampAngle, dampingFactor, RESPONSE_FACTOR } from './harbor_damping'
 import { canWalkAt, findRespawnPoint, findSupportHeight, SPAWN } from './harbor_layout'
+import { isLandAt } from './harbor_heightmap'
 import type { WorldObstacle } from './harbor_layout'
 import { JUMP, MOVEMENT, SWIM } from './harbor_movement_config'
 import { SAILING } from './harbor_sailing_config'
@@ -27,7 +28,17 @@ function canStand(player: HarborPlayer, point: PlanarVector, obstacles: readonly
     return radius >= LOOKOUT.lanternRadius + MOVEMENT.playerRadius && radius <= LOOKOUT.outerRadius - MOVEMENT.playerRadius
   }
   if (player.swimming) return canSwim(point)
-  return canWalkAt(point.x, point.z, { obstacles, height: player.height })
+  if (canWalkAt(point.x, point.z, { obstacles, height: player.height })) return true
+  // 岸边可以直接走进水里：只要人还贴着地面、目标点是水、并且没有障碍盒挡着。
+  // 进去之后下一帧就会转成游泳（见 update 里的判断）。
+  if (player.airborne || player.height > 0.02) return false
+  if (isLandAt(point.x, point.z) !== false) return false
+  if (!canSwim(point)) return false
+  const radius = MOVEMENT.playerRadius
+  return !obstacles.some(obstacle => !obstacle.supportOnly
+    && (obstacle.height === undefined || player.height + 0.02 < obstacle.height)
+    && point.x + radius > obstacle.footprint[0] && point.x - radius < obstacle.footprint[1]
+    && point.z + radius > obstacle.footprint[2] && point.z - radius < obstacle.footprint[3])
 }
 
 function slideAxis(position: HarborPlayer, obstacles: readonly WorldObstacle[], step: { axis: keyof PlanarVector; distance: number }) {
@@ -73,6 +84,9 @@ function advancePlayer(position: HarborPlayer, obstacles: readonly WorldObstacle
 
 function createVerticalMotion(player: HarborPlayer, obstacles: readonly WorldObstacle[]) {
   let velocity = 0
+  let gliding = false
+  let boosted = false
+  const GLIDE_FALL = 1.7
   return {
     jump() {
       if (player.airborne || player.sailing || player.lookout || player.sitting || player.swimming) return
@@ -87,8 +101,13 @@ function createVerticalMotion(player: HarborPlayer, obstacles: readonly WorldObs
       if (!player.airborne && player.height <= support) return
       player.airborne = true
       player.jumpAge += seconds
-      const next = player.height + (velocity - JUMP.gravity * seconds / 2) * seconds
-      velocity -= JUMP.gravity * seconds
+      // 滑翔：长按空格时下落变慢，并限制最终下落速度
+      const glidingNow = gliding && velocity < 0
+      // 蹦床弹起：上升段用更大的重力，升得更快；到顶后恢复正常重力落回来
+      const gravity = glidingNow ? JUMP.gravity * 0.1 : boosted && velocity > 0 ? JUMP.gravity * 1.8 : JUMP.gravity
+      const fall = glidingNow ? Math.max(velocity, -GLIDE_FALL) : velocity
+      const next = player.height + (fall - gravity * seconds / 2) * seconds
+      velocity = glidingNow ? Math.max(fall - gravity * seconds, -GLIDE_FALL) : fall - gravity * seconds
       if (velocity <= 0 && next <= support + JUMP.landingTolerance) {
         player.height = support
         player.airborne = false
@@ -96,8 +115,24 @@ function createVerticalMotion(player: HarborPlayer, obstacles: readonly WorldObs
         velocity = 0
       } else player.height = next
     },
+    glide(active: boolean) {
+      gliding = active
+    },
+    /** 当前是否在滑翔（给水平移动加速用） */
+    isGliding() {
+      return gliding && player.airborne && velocity < 0
+    },
+    /** 蹦床之类的强力起跳 */
+    boost(speed: number) {
+      if (player.sailing || player.lookout || player.sitting || player.swimming) return
+      velocity = speed
+      boosted = true
+      player.jumpAge = 0
+      player.airborne = true
+    },
     reset() {
       velocity = 0
+      gliding = false
       Object.assign(player, { height: 0, airborne: false, jumpAge: 0, landing: 0 })
     },
   }
@@ -120,6 +155,8 @@ export function createPlayerMotion(obstacles: readonly WorldObstacle[]) {
     if (seconds <= 0) return
     const target = worldDirection(direction, yaw)
     if (player.swimming) { target.x *= SWIM.speedFactor; target.z *= SWIM.speedFactor }
+    // 滑翔时长按空格，WASD 能带出明显的前进方向
+    if (vertical.isGliding()) { target.x *= 2.2; target.z *= 2.2 }
     const response = target.x || target.z ? MOVEMENT.accelerationTime : MOVEMENT.decelerationTime
     const { x: startX, z: startZ } = player
     const steps = Math.ceil(seconds / MOVEMENT.maxCollisionStep)
@@ -129,6 +166,11 @@ export function createPlayerMotion(obstacles: readonly WorldObstacle[]) {
       advancePlayer(player, obstacles, { velocity, target, response, seconds: seconds / steps })
     }
     if (!player.lookout) player.elevation = groundElevation(player.x, player.z)
+    // 走下岸、脚下变成水：自动开始游泳
+    if (!player.swimming && !player.airborne && player.height <= 0.02
+      && isLandAt(player.x, player.z) === false && canSwim(player)) {
+      player.swimming = true
+    }
     if (player.swimming) {
       player.height = FLOAT_HEIGHT
       player.airborne = false
@@ -155,6 +197,8 @@ export function createPlayerMotion(obstacles: readonly WorldObstacle[]) {
   }
   const relocate = {
     jump: vertical.jump,
+    glide: vertical.glide,
+    boost: vertical.boost,
     swim(point: PlanarVector) {
       positionAt(point, FLOAT_HEIGHT)
       player.swimming = true
@@ -181,5 +225,24 @@ export function createPlayerMotion(obstacles: readonly WorldObstacle[]) {
       vertical.reset()
     },
     clear() { velocity.x = 0; velocity.z = 0; player.speed = 0 },
+    /** 落到障碍盒里/非可走格时，把人推到最近的可走点，避免原地卡死 */
+    unstuck() {
+      if (player.sitting || player.lookout || player.swimming || player.sailing) return false
+      if (canWalkAt(player.x, player.z, { obstacles, height: player.height })) return false
+      for (let radius = 0.6; radius <= 4; radius += 0.6) {
+        for (let step = 0; step < 12; step += 1) {
+          const angle = (step / 12) * Math.PI * 2
+          const x = player.x + Math.cos(angle) * radius
+          const z = player.z + Math.sin(angle) * radius
+          if (!canWalkAt(x, z, { obstacles, height: player.height })) continue
+          player.x = x
+          player.z = z
+          velocity.x = 0
+          velocity.z = 0
+          return true
+        }
+      }
+      return false
+    },
   }
 }

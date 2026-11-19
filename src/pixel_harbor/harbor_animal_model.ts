@@ -41,15 +41,32 @@ export function makeAnimalModel(kit: ModelKit, animal: Resident) {
   const body = new T.Group()
   const { box } = kit
   const dog = animal.species === 'dog'
+  const fox = animal.species === 'fox'
+  const lion = animal.species === 'lion'
   const legs = makeLimbs(kit, animal)
   const eyes = [-0.115, 0.115].map(x => box([x, 0.66, 0.61], [0.037, 0.042, 0.017], [ANIMALS.palette.face]))
-  const tail = box([0, 0.55, -0.57], [0.095, 0.10, 0.43], [animal.accent])
+  // 尾巴：狐狸是蓬松白尾带深色尖，狮子是细尾带一撮毛，猫狗保持原样
+  const tail = fox ? box([0, 0.53, -0.62], [0.21, 0.24, 0.58], [animal.fur])
+    : lion ? box([0, 0.56, -0.62], [0.09, 0.09, 0.54], [animal.fur])
+      : box([0, 0.55, -0.57], [0.095, 0.10, 0.43], [animal.accent])
   body.add(box([0, 0.40, -0.06], [0.45, 0.39, 0.81], [animal.fur]),
     box([0, 0.61, 0.39], [0.44, 0.39, 0.42], [animal.fur]), tail, ...legs, ...eyes)
+  if (fox) {
+    body.add(box([0, 0.53, -0.93], [0.19, 0.2, 0.14], [animal.accent]))
+    body.add(box([0, 0.55, 0.615], [0.2, 0.14, 0.2], [animal.fur]))
+  }
+  if (lion) {
+    // 鬃毛：一圈比头更大的方块，把脸露在前半截
+    body.add(box([0, 0.62, 0.21], [0.68, 0.6, 0.34], [animal.accent]))
+    body.add(box([0, 0.55, 0.62], [0.22, 0.16, 0.22], [animal.accent]))
+    body.add(box([0, 0.56, -0.9], [0.14, 0.14, 0.14], [animal.accent]))
+  }
   if (dog) body.add(box([0, 0.55, 0.615], [0.24, 0.17, 0.21], [animal.accent]))
   for (const side of [-1, 1]) {
-    body.add(box([side * 0.15, dog ? 0.75 : 0.83, 0.36],
-      [0.115, dog ? 0.19 : 0.16, 0.16], [animal.accent]))
+    const earY = fox ? 0.93 : lion ? 0.86 : dog ? 0.75 : 0.83
+    const ear: [number, number, number] = fox ? [0.1, 0.26, 0.09]
+      : lion ? [0.13, 0.12, 0.12] : [0.115, dog ? 0.19 : 0.16, 0.16]
+    body.add(box([side * 0.15, earY, 0.36], ear, [animal.accent]))
   }
   const shadow = new T.Mesh(new T.CircleGeometry(0.32, 8),
     new T.MeshBasicMaterial({ color: ANIMALS.palette.shadow, transparent: true, opacity: 0.23, depthWrite: false }))

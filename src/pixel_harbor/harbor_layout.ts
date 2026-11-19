@@ -8,6 +8,7 @@ import { KEEPER, LOOKOUT, SUNSET, VILLAGE } from './harbor_exploration_config'
 import { isLandAt, terrainHeightAt } from './harbor_heightmap'
 import { DECK, VILLAGE_PATHS } from './harbor_terrain'
 import { HILL } from '../harbor_expansion/harbor-hill-config'
+import { FARM } from '../harbor_expansion/harbor-farm'
 
 export type Footprint = readonly [minX: number, maxX: number, minZ: number, maxZ: number]
 // 站在屋顶时 player.height 由浮点减法得出，可能比真实高度小一点点；
@@ -56,7 +57,12 @@ export const HARBOR_DESTINATIONS = {
   wishing: WISHING.place,
   chair: { kind: 'chair', id: 'chair', label: '坐到摇椅上', x: -22.15, z: 0.62, radius: 1.8 },
   notice: { kind: 'notice', id: 'notice', label: '查看公告', x: -22.57, z: 4.54, radius: 2.5 },
-  eval: { kind: 'eval', id: 'eval', label: evalStation.prompt, x: -21.89, z: 9.18, radius: 2.2 },
+  // 牛圈门口：站到这儿按 E 挤牛奶。坐标取 FARM.milk，和牛圈本体同一个来源。
+  cow: { kind: 'cow', id: 'cow', label: '挤牛奶', x: FARM.milk.x, z: FARM.milk.z, radius: FARM.milk.radius },
+  // 评测站：正面（柜台/招牌那侧）和村长小屋东墙齐平，都落在 x = -22.5 这条线上。
+  // 亭深 2.88 米，所以中心 = -22.5 - 1.44。BOOTH_X 直接取这里的 x，
+  // 亭子几何、碰撞盒、交互热点都会跟着走。
+  eval: { kind: 'eval', id: 'eval', label: evalStation.prompt, x: -23.94, z: 9.18, radius: 2.2 },
   mayor: { kind: 'mayor', id: PROFILE_UI.id, label: PROFILE_UI.action, ...PROFILE_UI.position, radius: PROFILE_UI.radius },
   lookout: { kind: 'lookout', id: LOOKOUT.id, label: LOOKOUT.action, ...LOOKOUT.position, radius: LOOKOUT.exitRadius },
   sunset: { kind: 'sunset', id: SUNSET.id, label: SUNSET.action, ...SUNSET.position, radius: SUNSET.radius },

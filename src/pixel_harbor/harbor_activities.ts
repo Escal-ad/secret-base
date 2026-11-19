@@ -27,9 +27,10 @@ function enterSunset(deps: Dependencies, reduced: boolean) {
   const height = groundElevation(SUNSET.seat.x,SUNSET.seat.z)
   Object.assign(player, SUNSET.seat, { elevation: height + SUNSET.seatedElevation, height: 0,
     airborne: false, sitting: true, facing: Math.atan2(x, z) })
-  const aim = { x: player.x + x * SUNSET.aimDistance, y: SUNSET.aimHeight + height, z: player.z + z * SUNSET.aimDistance }
-  deps.orbit.aim(aim, { yaw: Math.atan2(-x, -z) + SUNSET.cameraSideAngle,
-    pitch: reduced ? SUNSET.reducedPitch : SUNSET.pitch, distance: SUNSET.distance })
+  // 不再锁定镜头：坐下后相机和摇椅一样由玩家自己拖。
+  // 先把机位摆到背后、朝向落日，`aim(null, …)` 只改角度、不设跟随目标，所以之后随便转。
+  deps.orbit.aim(null, { yaw: Math.atan2(-x, -z) + SUNSET.cameraSideAngle,
+    pitch: reduced ? SUNSET.reducedPitch : SUNSET.pitch })
 }
 
 function focusFrom(pivot: Coordinate, place: HarborPlace, orbit: Dependencies['orbit']) {

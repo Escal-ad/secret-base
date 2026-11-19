@@ -22,9 +22,12 @@ export const MAYOR_NPC = {
   walkSpeed: 1.4,
   radius: 0.26,
   restYaw: Math.PI / 2,
-  nightFrom: 0.55,
-  rainFrom: 0.35,
-  hideDistance: 0.55,
+  // 回屋阈值和渔民/村民同一套（RESIDENTS.shelterNight / shelterRain）：
+  // 天黑或下雨就进屋，门口消失、天亮再从门口出来，节奏和渔民收工一致。
+  nightFrom: 0.60,
+  rainFrom: 0.40,
+  // 0.55 会在离墙 0.9 米的院子里就消失，看着像凭空不见；收到 0.30 才真正走到门口。
+  hideDistance: 0.30,
 } as const
 
 export const MAYOR_CHAIR = { x: -22.15, z: 0.55, yaw: Math.PI / 2, elevation: DECK }

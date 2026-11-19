@@ -1,52 +1,20 @@
-import { HarborContactInfo } from './harbor_contact_info'
 import { harborProfile, PROFILE_UI } from './harbor_profile'
 
-const READING_ANCHORS: Readonly<Record<string, string>> = { eval: 'evaluation', portfolio: 'works' }
-
-function ProfileIntroduction() {
-  const { avatar, tagline, biography, skills } = harborProfile
-  const visibleSkills = skills.filter(skill => skill.trim())
-  return <>
-    {avatar && <img className="mayor-avatar" src={avatar} alt="头像" />}
-    <p><strong>{tagline.trim() || PROFILE_UI.placeholder}</strong></p>
-    <p>{biography.trim() || PROFILE_UI.placeholder}</p>
-    <ul className="mayor-skills">{visibleSkills.length
-      ? visibleSkills.map(skill => <li key={skill}>{skill}</li>) : <li>{PROFILE_UI.fieldLabels.skills} · {PROFILE_UI.placeholder}</li>}</ul>
-  </>
-}
-
-function ProfileProjects() {
-  const { projects } = harborProfile
-  if (!projects.length) return <p>{PROFILE_UI.placeholder}</p>
-  return <ul className="mayor-projects">
-    {projects.map((project, index) => <li key={`${project.title}-${index}`}>
-      <strong>{project.title || PROFILE_UI.placeholder}</strong>
-      <p>{project.summary || PROFILE_UI.placeholder}</p>
-      <small>{project.source || PROFILE_UI.placeholder}</small>
-      {project.url && <p><a href={project.url} target="_blank" rel="noreferrer">{project.title || '项目链接'}</a></p>}
-      {project.jumpTo && <p><a href={`#${READING_ANCHORS[project.jumpTo] ?? project.jumpTo}`}>{PROFILE_UI.visitProject}</a></p>}
-    </li>)}
+// 村长小屋面板：只放「名字 / 邮箱 / 小红书 / 个人网站」四样
+function ProfileContact() {
+  const { name, email, links } = harborProfile
+  const visible = links.filter(link => link.url.trim())
+  return <ul className="mayor-contact">
+    <li><strong>名字</strong><span>{name.trim() || PROFILE_UI.placeholder}</span></li>
+    <li><strong>邮箱</strong><span>{email.trim() || PROFILE_UI.placeholder}</span></li>
+    {visible.map(link => <li key={link.url}><strong>{link.label}</strong>
+      <span><a href={link.url} target="_blank" rel="noreferrer">{link.label}</a></span></li>)}
   </ul>
 }
 
-function ProfileContact() {
-  const links = harborProfile.links.filter(link => link.label.trim() && link.url.trim())
-  return <>
-    <HarborContactInfo showIntro={false} showEmpty />
-    {links.length ? <ul className="mayor-links">{links.map(link =>
-      <li key={link.url}><a href={link.url} target="_blank" rel="noreferrer">{link.label}</a></li>)}</ul>
-      : <p>{PROFILE_UI.fieldLabels.links} · {PROFILE_UI.placeholder}</p>}
-  </>
-}
-
 export function HarborProfileContent() {
-  return <>
-    <h3>{PROFILE_UI.tabs.intro}</h3><ProfileIntroduction />
-    <h3>{PROFILE_UI.tabs.projects}</h3><ProfileProjects />
-    <h3>{PROFILE_UI.tabs.contact}</h3><ProfileContact />
-  </>
+  return <ProfileContact />
 }
-
 function listMissingProfileFields() {
   const fields = Object.entries(PROFILE_UI.fieldLabels).flatMap<string>(([key, label]) => {
     const value = harborProfile[key as keyof typeof PROFILE_UI.fieldLabels]

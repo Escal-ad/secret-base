@@ -5,7 +5,7 @@ import type { Bus, Settings } from './harbor-settings'
 
 const BUS_LABELS: Record<Bus, string> = { master: '主音量', music: '音乐', effects: '环境与音效', voice: '语音' }
 const QUALITY_LABELS = { high: '高', medium: '中', low: '低' }
-const WEATHER_LABELS = { clear: '晴', rain: '雨', snow: '雪' }
+const WEATHER_LABELS = { clear: '晴', rain: '雨', snow: '雪', storm: '雷阵雨' }
 const APPEARANCE_LABELS = { traveler: '星旅人（参考版）', variant: '星旅人（变体版）', original: '原外观' }
 type Props = { values: Settings; update: (next: Partial<Settings>) => void; night: boolean; toggleNight: () => void; credits: Credits | null }
 

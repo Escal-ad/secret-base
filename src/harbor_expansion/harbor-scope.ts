@@ -7,7 +7,7 @@ import type { HarborPlayer } from '../pixel_harbor/harbor_player_motion'
 import { HARBOR_LIGHTING } from '../pixel_harbor/harbor_lighting_config'
 
 export type ScopeTarget = { id:string;title?:string;object?:T.Object3D;position?:T.Vector3;
-  height?:number;night?:boolean;detailAnchor?:T.Object3D }
+  height?:number;night?:boolean;caption?:string;detailAnchor?:T.Object3D }
 export type ScopeDisplay = { zoom:number;name:string;caption:string;locked:boolean;loading:boolean }
 type Detail = ReturnType<typeof import('./harbor-scope-detail').mountScopeDetails>
 const MINIMUM_SEE = 0.35
@@ -35,6 +35,7 @@ export function createScope(scene:T.Scene, options:{camera:T.PerspectiveCamera;o
     {id:'moon',title:'月亮',position:moonDir.normalize().multiplyScalar(SKY_DISTANCE),night:true})
   const aim=new T.Vector3(), view=new T.Vector3(), position=new T.Vector3()
   let active=false, zoom:number=SCOPE.starting, yaw:number=SCOPE.yaw, pitch:number=SCOPE.pitch
+  let pitchLimit:number=SCOPE.pitchLimit
   let focus:ScopeTarget|null=null, locked:ScopeTarget|null=null, last='', loading=false, generation=0
   let details:Detail|undefined
   function publish() {
@@ -43,15 +44,24 @@ export function createScope(scene:T.Scene, options:{camera:T.PerspectiveCamera;o
     if(stamp===last)return
     last=stamp
     onChange({zoom,name:SCOPE.titles[id] || focus?.title || (focus ? '观察目标' : ''),
-      caption:id==='sun'?(SCOPE.sunHint || SCOPE.captions[id] || '待填写'):SCOPE.captions[id] || (focus?'待填写':''),
+      caption:id==='sun'?(SCOPE.sunHint || SCOPE.captions[id] || '待填写')
+        :focus?.caption || SCOPE.captions[id] || (focus?'待填写':''),
       locked:Boolean(locked),loading})
   }
-  async function open() {
+  /** pose 只有山顶看星空那台望远镜会传：换机位、抬头、放宽俯仰。 */
+  async function open(pose?: { eye?: [number,number,number]; pitch?: number; pitchLimit?: number }) {
     if (active) return
     const version=++generation
-    active=true; loading=true;last='';locked=null
-    zoom=SCOPE.starting;yaw=SCOPE.yaw;pitch=SCOPE.pitch
+    const sky=Boolean(pose?.eye)
+    active=true; loading=!sky;last='';locked=null
+    zoom=SCOPE.starting;yaw=SCOPE.yaw;pitch=pose?.pitch ?? SCOPE.pitch
+    pitchLimit=pose?.pitchLimit ?? SCOPE.pitchLimit
+    // 机位每次都复位：山顶那台用完以后，码头那台还要回到原来的位置
+    const seat = pose?.eye ?? SCOPE.eye
+    eye.set(seat[0], seat[1], seat[2])
     publish()
+    // 看星空不需要码头那套近景模型（海岛细节），直接用天上的星座
+    if(sky)return
     try {
       const module=await import('./harbor-scope-detail')
       if(active && version===generation)details=module.mountScopeDetails(scene,targets)
@@ -89,7 +99,7 @@ export function createScope(scene:T.Scene, options:{camera:T.PerspectiveCamera;o
     look(dx:number,dy:number) {
       locked=null
       yaw=T.MathUtils.clamp(yaw-dx*SCOPE.sensitivity,SCOPE.yaw-SCOPE.yawLimit,SCOPE.yaw+SCOPE.yawLimit)
-      pitch=T.MathUtils.clamp(pitch+dy*SCOPE.sensitivity,-SCOPE.pitchLimit,SCOPE.pitchLimit)
+      pitch=T.MathUtils.clamp(pitch+dy*SCOPE.sensitivity,-pitchLimit,pitchLimit)
     },
     zoom(direction:number){zoom=T.MathUtils.clamp(zoom+direction*SCOPE.step,SCOPE.minimum,SCOPE.maximum);publish()},
     lock(){locked=locked?null:focus;publish()},

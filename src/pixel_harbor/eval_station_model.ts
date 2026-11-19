@@ -56,7 +56,7 @@ export function addEvalStation(scene: T.Scene, kit: ModelKit) {
   booth.add(box([-0.84, 1.25, -1.16], [0.44, 0.09, 0.29], ['#d8c8a2']))
   booth.add(makeStationSign())
   booth.position.set(BOOTH_X, DECK, BOOTH_Z)
-  // 面朝西（大海、落日那一面），和村长小屋同一个朝向：局部 -z 转到世界 -x
+  // 正面（柜台、招牌那一侧）朝东：局部 -z 转到世界 +x，玩家从东边走进亭子。
   booth.rotation.y = -Math.PI / 2
   scene.add(booth)
 }

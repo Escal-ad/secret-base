@@ -19,7 +19,42 @@
 .map-placeholder span,.map-placeholder i{position:absolute;background:#7f9474}
 .map-placeholder span{left:8%;width:42%;top:24%;height:58%;clip-path:polygon(0 25%,38% 25%,38% 0,94% 0,94% 38%,66% 38%,66% 100%,32% 100%,32% 64%,0 64%)}
 .map-placeholder i{top:46%;left:43%;width:38%;height:7%;background:#bc9064}
-.pixel-harbor .map-marker{position:absolute;transform:translate(-50%,-50%);width:38px;min-height:38px;padding:0;border:1px solid #fff1cc;color:#fff0cc;background:#304b4e;font-size:13px;border-radius:50%;box-shadow:none}
+/* 地图传送点：立体悬浮图钉（带投影 + 底部尖角） */
+.pixel-harbor .map-marker{
+  position:absolute;
+  transform:translate(-50%,-100%);
+  width:26px;height:26px;min-height:26px;padding:0;
+  border:2px solid #fff6df;
+  border-radius:50% 50% 50% 50%;
+  color:#fff6df;
+  background:radial-gradient(circle at 35% 30%, #6f8f8a 0%, #2f4a4c 70%);
+  font-size:0;
+  box-shadow:0 6px 0 -2px rgba(40,44,48,0.35), 0 10px 14px rgba(40,44,48,0.28);
+  transition:transform 120ms ease, box-shadow 120ms ease;
+}
+.pixel-harbor .map-marker::before{
+  content:"";
+  position:absolute;left:50%;bottom:-9px;
+  width:9px;height:9px;
+  transform:translateX(-50%) rotate(45deg);
+  background:#2f4a4c;
+  border-right:2px solid #fff6df;
+  border-bottom:2px solid #fff6df;
+}
+.pixel-harbor .map-marker::after{
+  content:"";
+  position:absolute;left:50%;bottom:-16px;
+  width:18px;height:6px;
+  transform:translateX(-50%);
+  border-radius:50%;
+  background:rgba(40,44,48,0.22);
+  filter:blur(1px);
+}
+.pixel-harbor .map-marker:hover,
+.pixel-harbor .map-marker[aria-pressed="true"]{
+  transform:translate(-50%,-100%) translateY(-3px);
+  box-shadow:0 9px 0 -2px rgba(40,44,48,0.35), 0 16px 18px rgba(40,44,48,0.3);
+}
 .pixel-harbor .map-marker:is(:focus-visible,[aria-pressed=true]){outline:2px solid #fff1c6;outline-offset:-4px}
 .pixel-harbor .map-marker:hover{background:#426365}
 .map-pin-leader{position:absolute;height:2px;background:#fff1cc;transform-origin:left;pointer-events:none}
@@ -49,3 +84,8 @@
 .pixel-harbor[data-reduced=true] :is(.harbor-panel-scrim,.harbor-detail,.harbor-header,.harbor-title){transition:none}
 @media(prefers-reduced-motion:reduce){.pixel-harbor .harbor-viewport[data-ready=true]{animation:none}}
 
+
+/* 地图页签：只留地图本体，隐藏菜单标题、页签条和缩放工具条 */
+.pixel-harbor [data-menu-tab="map"] > .harbor-panel-heading,
+.pixel-harbor [data-menu-tab="map"] > .harbor-menu-tabs,
+.pixel-harbor [data-menu-tab="map"] .map-toolbar { display: none !important; }

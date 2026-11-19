@@ -134,7 +134,7 @@ export function useHarborScene({ mount, labels, hint }: { mount: ElementRef; lab
     const detach=attachHarbor({
       mount: mount.current, artworks, night: requestedNight.current,
       simplified: shouldSuggestReading(), onHotspot: setHotspot,
-      settings:()=>prefs.current, onScope:setScope, play:audio.play,setAmbience:audio.ambient,
+      settings:()=>prefs.current, onScope:setScope, play:audio.play,thunder:audio.thunder,setAmbience:audio.ambient,
       onOpen(spot) {
         visit(spot.id)
         if (spot.kind === 'mayor') onRead()

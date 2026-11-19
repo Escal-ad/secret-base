@@ -57,7 +57,7 @@ export function HarborMainMenu(props: Props) {
   const credits = useCredits(props.audio)
   const { closing, onClose, onExited } = props
   return <HarborPanel wide closing={closing} onClose={onClose} onExited={onExited} placement={tab === 'map' ? 'full' : undefined}>
-    <article>
+    <article data-menu-tab={tab}>
       <div className="harbor-panel-heading">
         <h2 id="harbor-detail-title" tabIndex={-1}>渔港菜单</h2>
         {props.onReturn && <button className="harbor-menu-return" type="button" onClick={props.onReturn}>回码头</button>}

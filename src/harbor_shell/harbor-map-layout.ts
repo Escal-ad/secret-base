@@ -5,7 +5,7 @@ export type Point = { x: number; y: number }
 export type MapSize = { width: number; height: number }
 export type MapView = { zoom: number; offset: Point }
 export const MAP_UI = {
-  initial: { zoom: 1, offset: { x: 0, y: 0 } }, maxZoom: 2.5, zoomStep: 0.25,
+  initial: { zoom: 1.3, offset: { x: 0, y: 0 } }, maxZoom: 3, zoomStep: 0.25,
   markerRadius: 19, markerSpacing: 41, searchRings: 5, searchBearings: 16, dragThreshold: 6,
 } as const
 

@@ -3,7 +3,7 @@ export const RESIDENTS = {
   // 原来 0.39 只有 6° 摆腿，看着像滑行，提到 1.5 后约 15°，走起来才像迈步。
   radius: 1.55, activityRadius: 13, speed: 1.35, cadence: 0.30, greet: '打招呼', placeholder: '待填写',
   // 作息：夜里或雨大时走回最近的屋子躲着，白天再出来。
-  homes: [[-3, 17.5], [6, 19.2], [-2.69, -21.21], [-24.7, -3]] as const,
+  homes: [[-3, 19.2], [6, 19.2], [-2.69, -21.21], [-24.7, -3]] as const,
   shelterNight: 0.60, shelterRain: 0.40, shelterDistance: 0.75,
   // 踱步节奏：轨迹点沿椭圆走的角速度。角速度 × 半径 ≈ 目标点速度，
   // 要略小于 speed（1.35），他才能一直"追着走"，腿的摆动和位移才对得上。
@@ -16,10 +16,8 @@ export const RESIDENTS = {
   seatHeight: 0.30, sitSeconds: 11, standSeconds: 7, lookEvery: 8, lookLength: 3,
   // TODO(reason): 待用户填写姓名、职业和招呼台词。
   people: [
-    // build 是体型缩放；headwear 区分渔帽/头巾；apron 是围裙颜色，留空则没有。
-    // 这位是船夫造型的渔民：站在东堤北缘、面朝海钓鱼，不再四处走动。
-    { spot: [-37.1,-6.36], hair: '#5d5443', skin: '#d8ae90', shirt: '#707da0', trousers: '#474d52', hat: true,
-      build: [0.98, 1.05, 0.98], headwear: 'bandana', name: '', job: '', line: '' },
+    // 原来在后山踱步的那位村民已经撤掉：那一片现在是长白山剑客「宁归一」在守
+    // （见 harbor-swordsman.ts），所以这里不再放一条会重复的村民主体。
   // homeDoor：收工时走回的门口（渔民小屋北墙外，门朝 -z）。到了门口才进屋消失。
   { spot: [13.5, 16.30], facing: Math.PI, homeDoor: [6.0, 16.60], hair: '#655d57', skin: '#c89773',
     shirt: '#426d78', trousers: '#58483d', hat: false,

@@ -121,3 +121,23 @@
 }
 .profile-diagnostics summary { cursor: pointer; }
 .profile-diagnostics ul { margin: 6px 0; padding-inline: 16px 4px; }
+
+/* 「了解我」那一节：用《小王子》沙地插画打底 */
+.harbor-reader #mayor {
+  position: relative;
+  padding: 28px 26px;
+  border-radius: 6px;
+  background-image: url("mayor-panel.png");
+  background-size: cover;
+  background-position: center 68%;
+  background-repeat: no-repeat;
+}
+.harbor-reader #mayor::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255,250,238,0.82) 0%, rgba(255,250,238,0.62) 55%, rgba(255,250,238,0.35) 100%);
+  pointer-events: none;
+}
+.harbor-reader #mayor > * { position: relative; }

@@ -33,7 +33,11 @@ function optionalReverb(context:AudioContext, input:AudioNode, output:AudioNode)
 export function chooseMusic({ scene, settings }: AudioState) {
   if (settings.track !== 'auto') return settings.track
   const table: Readonly<Record<string, Track | '' | undefined>> = AUDIO.mapping
-  return (scene.mode && table[scene.mode]) || table[scene.weather] || (scene.night && table.night) || AUDIO.mapping.default
+  // 优先级：场景模式 > 夜晚 > 天气 > 默认
+  const mode = scene.mode ? table[scene.mode] : undefined
+  if (mode) return mode
+  if (scene.night && table.night) return table.night
+  return table[scene.weather] || AUDIO.mapping.default
 }
 
 function makeAudioOutput(context: AudioContext) {
@@ -241,7 +245,45 @@ export function createHarborAudio() {
       if (!state?.settings.sound || document.hidden) return
       void live?.play(sound, options)
     },
-    ambient(sound:Ambient,value:AmbientValue) { live?.ambient.set(sound,value) },
+    // 雷声（合成，不用音频文件）：一段低通噪声 + 低频隆隆
+    thunder() {
+      const context = live?.context
+      const route = live?.routes.effects
+      if (!context || !route || context.state !== 'running') return
+      const now = context.currentTime
+      const length = Math.floor(context.sampleRate * 2.4)
+      const buffer = context.createBuffer(1, length, context.sampleRate)
+      const data = buffer.getChannelData(0)
+      for (let index = 0; index < length; index += 1) {
+        data[index] = (Math.random() * 2 - 1) * Math.pow(1 - index / length, 2.2)
+      }
+      const source = context.createBufferSource()
+      source.buffer = buffer
+      const filter = context.createBiquadFilter()
+      filter.type = 'lowpass'
+      filter.frequency.value = 300
+      const gain = context.createGain()
+      gain.gain.setValueAtTime(0.0001, now)
+      gain.gain.linearRampToValueAtTime(0.85, now + 0.07)
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.3)
+      source.connect(filter)
+      filter.connect(gain)
+      gain.connect(route)
+      source.start(now)
+      source.stop(now + 2.4)
+      const rumble = context.createOscillator()
+      rumble.type = 'sine'
+      rumble.frequency.setValueAtTime(58, now)
+      rumble.frequency.exponentialRampToValueAtTime(30, now + 1.9)
+      const rumbleGain = context.createGain()
+      rumbleGain.gain.setValueAtTime(0.0001, now)
+      rumbleGain.gain.exponentialRampToValueAtTime(0.3, now + 0.14)
+      rumbleGain.gain.exponentialRampToValueAtTime(0.0001, now + 2)
+      rumble.connect(rumbleGain)
+      rumbleGain.connect(route)
+      rumble.start(now)
+      rumble.stop(now + 2.1)
+    },    ambient(sound:Ambient,value:AmbientValue) { live?.ambient.set(sound,value) },
     clearAmbience() {
       for(const sound of ['engine','machine','rain','wind'] as const) live?.ambient.set(sound,{volume:0})
     },

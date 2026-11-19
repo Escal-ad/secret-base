@@ -3,7 +3,7 @@ import { WEATHER } from './harbor-weather-config'
 import type { Quality, Weather } from '../harbor_shell/harbor-settings'
 import { seededRandom } from '../pixel_harbor/harbor_materials'
 
-export type WeatherFrame = { rain: number; snow: number; cover: number; ice: number; low: boolean }
+export type WeatherFrame = { rain: number; snow: number; cover: number; ice: number; low: boolean; flash?: number }
 const PARTICLE_SEED = 193
 const DROP_WIDTH = 0.024
 const DROP_HEIGHT = 0.42
@@ -98,17 +98,46 @@ export function createHarborWeather(scene: T.Scene) {
   const rippleUniform={value:0}, timeUniform={value:0}
   attachSurfaceWeather(scene,{snow:coverUniform,ripple:rippleUniform,time:timeUniform})
   const particles = addParticles(scene)
-  const frame: WeatherFrame = { rain: 0, snow: 0, cover: 0, ice: 0, low: false }
+  const frame: WeatherFrame = { rain: 0, snow: 0, cover: 0, ice: 0, low: false, flash: 0 }
   let snowAge = 0
   let clock = 0
+  // 雷阵雨：隔几秒来一道紫色闪电
+  const bolt = new T.Group()
+  for (let index = 0; index < 7; index += 1) {
+    const piece = new T.Mesh(new T.BoxGeometry(0.5, 2.4, 0.5),
+      new T.MeshBasicMaterial({ color: index % 2 ? '#c9a6ff' : '#a272f5', transparent: true, opacity: 0, depthWrite: false }))
+    piece.position.set((index % 3 - 1) * 0.55, index * 2.1, (index % 2) * 0.3)
+    bolt.add(piece)
+  }
+  bolt.visible = false
+  scene.add(bolt)
+  let strike = 3
+  let flash = 0
   return {
     frame,
     update(weather: Weather, camera: T.Camera, options: { step: number; quality: Quality; tier: number; reduced: boolean }) {
       const { step, quality, tier, reduced } = options
       frame.low = quality === 'low' || tier >= 2
-      frame.rain = mixToward(frame.rain, Number(weather === 'rain'), step, WEATHER.transition)
+      frame.rain = mixToward(frame.rain, Number(weather === 'rain' || weather === 'storm'), step, WEATHER.transition)
       frame.snow = mixToward(frame.snow, Number(weather === 'snow'), step, WEATHER.transition)
       snowAge = weather === 'snow' ? snowAge + step : 0
+      if (weather === 'storm' && !reduced) {
+        strike -= step
+        if (strike <= 0) {
+          strike = 4 + Math.random() * 6
+          flash = 1
+          const angle = Math.random() * Math.PI * 2
+          bolt.position.set(Math.cos(angle) * 120, 22, Math.sin(angle) * 120)
+          bolt.rotation.y = angle
+        }
+      }
+      flash = Math.max(0, flash - step * 3.6)
+      frame.flash = flash
+      bolt.visible = flash > 0.05
+      for (const piece of bolt.children) {
+        const material = (piece as T.Mesh).material as T.MeshBasicMaterial
+        material.opacity = flash > 0.4 ? 1 : flash
+      }
       frame.cover = mixToward(frame.cover, Number(weather === 'snow'), step, weather === 'snow' ? WEATHER.snowBuild : WEATHER.snowMelt)
       const freeze = snowAge >= WEATHER.iceDelay
       frame.ice = mixToward(frame.ice, freeze ? WEATHER.maximumIce : 0, step,

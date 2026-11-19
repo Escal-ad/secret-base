@@ -8,6 +8,33 @@ import { createFirstCamera } from '../harbor_expansion/harbor-first-camera'
 import { createTravelAvatar } from '../harbor_expansion/harbor-traveler'
 import { addHarborMayor } from '../harbor_expansion/harbor-mayor'
 import { HILL_FLIGHT_VOLUMES, HILL_OBSTACLES } from '../harbor_expansion/harbor-hill'
+import { createFarmLife } from '../harbor_expansion/harbor-farm'
+import { createCherryPetals } from '../harbor_expansion/harbor-cherry'
+import { addMapleTree, createMapleLeaves } from '../harbor_expansion/harbor-maple'
+import { addBamboo, createBambooLeaves, createPandas } from '../harbor_expansion/harbor-bamboo'
+import { createStarSky, addStargazerTelescope, currentZodiac, SKY, SKY_EYE } from '../harbor_expansion/harbor-stars'
+import { createSwordsman } from '../harbor_expansion/harbor-swordsman'
+import { createSeabed } from '../harbor_expansion/harbor-seabed'
+import { addVegetablePlots } from '../harbor_expansion/harbor-vegetable-plots'
+import { addOrchard, ORCHARD } from '../harbor_expansion/harbor-orchard'
+import { addItem } from '../harbor_expansion/harbor-inventory'
+import { PLOTS } from '../harbor_expansion/harbor-vegetable-plots'
+import { SHOPS, createShopLife } from '../harbor_expansion/harbor-shops'
+import { NPC_DIALOGUE, FARMER_GIFTS, SHOP_SNACKS, SHOP_FORTUNES } from './harbor_npc_dialogue'
+import { createChickens } from '../harbor_expansion/harbor-chicken'
+import { addPines } from '../harbor_expansion/harbor-pines'
+import { createPenShelters } from '../harbor_expansion/harbor-pen-shelters'
+import { addWillows } from '../harbor_expansion/harbor-willow'
+import { TRAMPOLINE, TRAMP_GATE } from '../harbor_expansion/harbor-trampoline'
+import { FIREWORK, createFireworks } from '../harbor_expansion/harbor-fireworks'
+import { createWasher, WASHER } from '../harbor_expansion/harbor-washer'
+import { createArcticPeople } from '../harbor_expansion/harbor-arctic'
+import { SKY_ISLAND, SWING_SEAT_HEIGHT, CLOUD_GATE } from '../harbor_expansion/harbor-sky-island'
+import { createHanfuPeople } from '../harbor_expansion/harbor-siheyuan'
+import { createPalacePeople } from '../harbor_expansion/harbor-palace'
+import { createHelipadNpcs, HELIPAD_NPCS } from '../harbor_expansion/harbor-helipad-npc'
+import { ISLAND_PAD } from '../harbor_expansion/harbor-island-pad'
+import { createCottageFlora } from '../harbor_expansion/harbor-flora'
 import { createFlightMotion } from '../harbor_flight/harbor-flight-motion'
 import { FLIGHT } from '../harbor_flight/harbor-flight-config'
 import { createFlightAudio } from '../harbor_flight/harbor-flight-audio'
@@ -32,12 +59,12 @@ import { CAPTAIN } from './harbor_captain_config'
 import { addHarborForest, FOREST_FLIGHT_VOLUMES, FOREST_OBSTACLES } from './harbor_forest'
 import { createHarborGlow } from './harbor_glow'
 import { addExhibits } from './harbor_exhibits'
-import { LOOKOUT, VILLAGE } from './harbor_exploration_config'
+import { LOOKOUT, SUNSET, VILLAGE } from './harbor_exploration_config'
 import { createHotspotMarker } from './harbor_hotspot_marker'
 import type { HintPosition } from './harbor_hotspot_marker'
 import { artHotspot, createHotspotTracker, findHarborHotspot, isInsideHotspot, listHarborPlaces } from './harbor_hotspots'
 import type { Exhibit, Hotspot } from './harbor_hotspots'
-import { canWalkAt, DECK, followObstacle } from './harbor_layout'
+import { canWalkAt, DECK, findSupportHeight, followObstacle } from './harbor_layout'
 import type { Footprint, WorldObstacle } from './harbor_layout'
 import { createLabelProjection } from './harbor_label_projection'
 import type { ProjectedLabel } from './harbor_label_projection'
@@ -78,6 +105,7 @@ type RuntimeOptions = {
   settings: () => Settings
   onScope: (scope: ScopeDisplay|null) => void
   play: EmitSound
+  thunder?: () => void
   setAmbience: SetAmbience
   onError: () => void
 }
@@ -87,6 +115,10 @@ const INTERNAL_WIDTH = 720
 const PIXEL_QUALITY = { high:1, medium:0.83, low:0.65 } as const
 const EXHIBIT_CAMERA_HEIGHT = 2.45
 const MIN_RENDER_DIMENSION = 1
+// 当前夜色强度（0 白天，1 深夜）：望远镜提示要用
+let skyNight = 0
+// 烟花发射器（交互层拿不到 startHarbor 里的实例，用这个句柄）
+let fireworkLaunch: (() => boolean) | null = null
 const CAPTAIN_COLLISION_RADIUS = 0.26
 const ACTOR_RADIUS = 0.3
 
@@ -258,6 +290,7 @@ type NavigationWorld = {
   animals: ReturnType<typeof createHarborAnimals>; obstacles: ReturnType<typeof walkingObstacles>
   extension: SceneExtension
   pastimes: ReturnType<typeof createHarborPastimes>
+  seabed: ReturnType<typeof createSeabed>
   flightVolumes: ReturnType<typeof addWorld>['flightVolumes']
 }
 
@@ -269,7 +302,7 @@ function isOverLookoutRing(point: { x: number; z: number }) {
 
 // Navigation input shares one lock with panels and activities, including travel during a fade.
 function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera, world: NavigationWorld) {
-  const { exhibits, canvas, propObstacles, yacht, animals, obstacles, extension } = world
+  const { exhibits, canvas, propObstacles, yacht, animals, obstacles, extension, seabed } = world
   const { scope }=extension
   const { pastimes } = world
   const { fishing } = pastimes
@@ -281,9 +314,16 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
   // 由活动模块在创建后接管：降落平台等同于「登塔」，这样下塔方式与原来一致。
   // 直升机：停在停机坪上的那架。站到机身旁按 F 上机；飞行中按 R 一键回到停机坪。
   const heli = { riding: false, home: { x: HELIPAD.x, y: HELIPAD.top + 0.09, z: HELIPAD.z } }
-  const nearHelicopter = () => Math.hypot(player.x - heli.home.x, player.z - heli.home.z) < 5.5
+  // 两个停机点：村里梯田上的老停机场，和外岛山顶新修的那个
+  const PADS = [heli.home, { x: ISLAND_PAD.x, y: ISLAND_PAD.top, z: ISLAND_PAD.z }]
+  const nearestPad = (point: { x: number; z: number }) => PADS.reduce((best, pad) =>
+    Math.hypot(point.x - pad.x, point.z - pad.z) < Math.hypot(point.x - best.x, point.z - best.z) ? pad : best, PADS[0])
+  const nearHelicopter = () => Math.hypot(player.x - world.helicopter.position.x,
+    player.z - world.helicopter.position.z) < 5.5
   function parkHelicopter() {
-    world.helicopter.position.set(heli.home.x, heli.home.y, heli.home.z)
+    // 停在离它最近的那个停机点：在岛上就留在岛上，不会自己飞回村里
+    const pad = nearestPad(world.helicopter.position)
+    world.helicopter.position.set(pad.x, pad.y, pad.z)
     world.helicopter.rotation.y = Math.PI
     world.helicopter.visible = true
   }  let landOnPlatform: () => boolean = () => false
@@ -296,9 +336,32 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
   }, notice: options.onFlightNotice,
     land: (point: { x: number; y: number; z: number }) => {
       if (isOverLookoutRing(point)) return landOnPlatform()
-      return canWalkAt(point.x, point.z, { obstacles: [], height: 0 })
-        ? motion.teleport(point, point.y)
-        : motion.swim(point)
+      // 云岛：高度图不一定每格都烘到，这里直接按岛的台面高度落下
+      if (Math.hypot(point.x - SKY_ISLAND.x, point.z - SKY_ISLAND.z) < SKY_ISLAND.size * 0.58
+        && point.y > SKY_ISLAND.top - 6) {
+        return motion.teleport(point, SKY_ISLAND.top + 0.1)
+      }
+      // 降落点必须真的能站：带上障碍盒判定，别落进房子/石头里
+      if (!canWalkAt(point.x, point.z, { obstacles, height: 0 })) {
+        let landed = false
+        for (let radius = 0.8; radius <= 4 && !landed; radius += 0.8) {
+          for (let step = 0; step < 12 && !landed; step += 1) {
+            const angle = (step / 12) * Math.PI * 2
+            const x = point.x + Math.cos(angle) * radius
+            const z = point.z + Math.sin(angle) * radius
+            if (!canWalkAt(x, z, { obstacles, height: 0 })) continue
+            const near = findSupportHeight(x, z, { obstacles, height: point.y })
+            motion.teleport({ x, z }, DECK + near)
+            landed = true
+          }
+        }
+        if (!landed) return motion.swim(point)
+        return true
+      }
+      // 落到「脚下真正能站的高度」，而不是停下来的那个飞行高度：
+      // 屋顶、树冠、梯田、停机坪都算在内（高度图里已经有它们的顶面）。
+      const support = findSupportHeight(point.x, point.z, { obstacles, height: point.y })
+      return motion.teleport(point, DECK + support)
     },
     recover: motion.respawn })
   const sailing = createHarborSailing([{ id: 'skiff', group: world.vessel }, { id: 'yacht', group: yacht }],
@@ -326,16 +389,27 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     heli.riding = false
     orbit.setHeli(false)
     flight.reset()
+    const pad = nearestPad(player)
     parkHelicopter()
-    motion.teleport({ x: heli.home.x, z: heli.home.z + 3.6 })
+    motion.teleport({ x: pad.x, z: pad.z + 3.6 })
     options.onFlightNotice(FLIGHT.heli.home)
   }
   const onHeliKey = (event: KeyboardEvent) => {
     if (event.code !== 'KeyR') return
-    const away = Math.hypot(world.helicopter.position.x - heli.home.x, world.helicopter.position.z - heli.home.z) > 0.2
+    const pad = nearestPad(world.helicopter.position)
+    const away = Math.hypot(world.helicopter.position.x - pad.x, world.helicopter.position.z - pad.z) > 0.2
     if (heli.riding || away) returnToHelipad()
   }
   window.addEventListener('keydown', onHeliKey)
+  // 站在蹦床上按 H 起跳
+  const onBounceKey = (event: KeyboardEvent) => {
+    if (event.code !== 'KeyH' || event.repeat) return
+    const person = motion.player
+    if (Math.hypot(person.x - TRAMPOLINE.x, person.z - TRAMPOLINE.z) > TRAMPOLINE.size * 0.62) return
+    motion.boost(TRAMPOLINE.launch)
+    options.play('cape', { pitch: 1.35 })
+  }
+  window.addEventListener('keydown', onBounceKey)
   const first = createFirstCamera(camera)
   const places = listHarborPlaces(exhibits)
   const activity = createHarborActivities({ motion, orbit, sailing,
@@ -354,15 +428,126 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
       const dock=sailing.nearbyDock()
       return dock ? { kind:'dock',id:dock.id,label:SAILING.dockPrompt,x:dock.x,z:dock.z,radius:dock.berthRadius } satisfies Hotspot : null
     }
+    if(activity.mode==='sunset'){
+      // 坐着看落日时仍然给一条提示：按 E 起身（镜头是自由的，和摇椅一样）
+      return { kind:'sunset', id:'sunset', label: SUNSET.exit, x: player.x, z: player.z, radius: 1 } satisfies Hotspot
+    }
     if(activity.mode)return null
+    // 山顶望远镜：夜里才能看星空
+    if (Math.hypot(player.x - SKY.telescope.x, player.z - SKY.telescope.z) < 2.4) {
+      const dark = skyNight > 0.55
+      const zodiac = currentZodiac()
+      return { kind: 'stargaze', id: 'stargaze', x: SKY.telescope.x, z: SKY.telescope.z, radius: 2.4,
+        label: dark ? '看星空' : SKY.daytimeLabel,
+        title: dark ? zodiac.name : '星空',
+        note: dark ? zodiac.intro : SKY.daytimeNote } satisfies Hotspot
+    }
+    // 海上烟花点：站上去按 E 放一束
+    if (Math.hypot(player.x - FIREWORK.x, player.z - FIREWORK.z) < 2.0) {
+      return { kind: 'washer', id: 'firework', label: '放一束烟花', title: '海上烟花点',
+        note: '按 E 放一束，升到灯塔一半高再炸开。', x: FIREWORK.x, z: FIREWORK.z, radius: 2.0 } satisfies Hotspot
+    }
+    // 栈桥上的蹦床传送点：只有光圈，按 E 直接上蹦床
+    if (Math.hypot(player.x - TRAMP_GATE.x, player.z - TRAMP_GATE.z) < 2.1 && player.height < 5) {
+      return { kind: 'cloudgate', id: 'tramp-gate', label: '蹦床传送点',
+        title: '蹦床传送点', note: '踩上光圈就能到海上的蹦床。',
+        x: TRAMP_GATE.x, z: TRAMP_GATE.z, radius: 2.1 } satisfies Hotspot
+    }
+    // 海上蹦床：站上去按 E 弹起来
+    if (Math.hypot(player.x - TRAMPOLINE.x, player.z - TRAMPOLINE.z) < TRAMPOLINE.size * 0.55) {
+      return { kind: 'trampoline', id: 'trampoline', label: '按 H 开始起蹦', title: '海上蹦床',
+        note: '按 H 起跳（弹得比灯塔还高），按 E 回栈桥。', x: TRAMPOLINE.x, z: TRAMPOLINE.z,
+        radius: TRAMPOLINE.size * 0.55 } satisfies Hotspot
+    }
+    // 云迁层传输点：桥上按 E 上岛，岛上按 E 回渔村
+    if (Math.hypot(player.x - CLOUD_GATE.x, player.z - CLOUD_GATE.z) < 2.1 && player.height < 5) {
+      return { kind: 'cloudgate', id: 'cloud-gate-up', label: CLOUD_GATE.label,
+        title: CLOUD_GATE.label, note: '踩上光圈就能升到云上的小教堂。',
+        x: CLOUD_GATE.x, z: CLOUD_GATE.z, radius: 2.1 } satisfies Hotspot
+    }
+    if (Math.hypot(player.x - SKY_ISLAND.x, player.z - SKY_ISLAND.z) < SKY_ISLAND.size * 0.9
+      && player.elevation + player.height > 20) {
+      return { kind: 'cloudgate', id: 'cloud-gate-down', label: '返回渔村',
+        title: '云迁层传输点', note: '按 E 顺着云缝滑回栈桥。',
+        x: player.x, z: player.z, radius: 2 } satisfies Hotspot
+    }
+    // 洗衣服的老妇人
+    if (Math.hypot(player.x - WASHER.x, player.z - WASHER.z) < 2.1) {
+      return { kind: 'washer', id: 'washer', label: '和洗衣妇说话',
+        title: '洗衣服的老妇', note: '她抬头笑笑：「等我把这件捶完。」',
+        x: WASHER.x, z: WASHER.z, radius: 2.1 } satisfies Hotspot
+    }
+    // 浮岛上的花秋千：坐上去（相机完全自由，和摇椅一样）
+    if (Math.hypot(player.x - SKY_ISLAND.swing.x, player.z - SKY_ISLAND.swing.z) < 1.7
+      && player.elevation + player.height > 20) {
+      return { kind: 'chair', id: 'sky-swing', label: player.sitting ? '起身' : '坐上花秋千',
+        x: SKY_ISLAND.swing.x + 0.35, z: SKY_ISLAND.swing.z,
+        note: String(SWING_SEAT_HEIGHT), radius: 1.7 } as unknown as Hotspot
+    }
+    for (const npc of [HELIPAD_NPCS.farmer, HELIPAD_NPCS.pilot]) {
+      if (Math.hypot(player.x - npc.x, player.z - npc.z) < 2.1) {
+        return { kind: 'washer', id: 'helipad-npc', label: '和' + npc.label + '说话',
+          title: npc.label, note: npc.line, x: npc.x, z: npc.z, radius: 3.2 } satisfies Hotspot
+      }
+    }
+    // 岬角上两间铺子：走到柜台前按 E
+    for (const shop of [SHOPS.store, SHOPS.fortune]) {
+      if (Math.hypot(player.x - shop.x, player.z - (shop.z + shop.d / 2 + 0.9)) < 1.9) {
+        const store = shop === SHOPS.store
+        const late = skyNight > 0.5
+        return { kind: 'shop', id: store ? 'shop-store' : 'shop-fortune',
+          title: shop.label, label: '进店看看',
+          note: store
+            ? late
+              ? '檐下的灯亮着。店员趴在柜台上打瞌睡，含混地说：「汽水在架子上……自己拿，钱放罐子里。」'
+              : '柜台上摆着冰汽水、饼干和晒干的鱼干。戴红鸭舌帽的店员问你要不要来一瓶。'
+            : late
+              ? '算子铺已经打烊，一块木牌挂在门口：「白日再来」。里头只剩一盏灯还亮着。'
+              : '戴墨镜的先生正摆弄水晶球，头也不抬：「坐吧，先说说你最近在愁什么。」',
+          x: shop.x, z: shop.z, radius: 2.0 } satisfies Hotspot
+      }
+    }
+    // 果树 / 椰子树 / 菜田：靠近就能摘
+    const orchard = ORCHARD.trees.reduce<{ name: string; d: number } | null>((best, tree) => {
+      const d = Math.hypot(player.x - tree.x, player.z - ORCHARD.rowZ)
+      return d < 2.6 && (!best || d < best.d) ? { name: tree.name, d } : best
+    }, null)
+    if (orchard) {
+      return { kind: 'pick', id: 'pick-fruit', label: '摘' + orchard.name, title: orchard.name,
+        x: player.x, z: player.z, radius: 2.6 } satisfies Hotspot
+    }
+    const coconut = ORCHARD.coconuts.some(tree => Math.hypot(player.x - tree.x, player.z - tree.z) < 2.8)
+    if (coconut) {
+      return { kind: 'pick', id: 'pick-coconut', label: '摘椰子', title: '椰子',
+        x: player.x, z: player.z, radius: 2.8 } satisfies Hotspot
+    }
+    const bed = PLOTS.beds.find(item => Math.abs(player.x - item.x) < item.w / 2 + 0.6
+      && Math.abs(player.z - item.z) < item.d / 2 + 0.6)
+    if (bed) {
+      const kind: string = bed.crops[0]
+      const crop = kind === 'cabbage' ? '白菜' : kind === 'radish' ? '萝卜'
+        : kind === 'chili' ? '辣椒' : kind === 'strawberry' ? '草莓' : '西瓜'
+      return { kind: 'pick', id: 'pick-crop', label: '摘' + crop, title: crop,
+        x: player.x, z: player.z, radius: 1.2 } satisfies Hotspot
+    }
+    // 海豚：游到旁边就能摸
+    const dolphin = seabed.nearestDolphin(player.x, player.z)
+    if (dolphin) {
+      return { kind: 'dolphin', id: 'dolphin', label: '摸摸海豚', x: player.x, z: player.z, radius: 1.2 } satisfies Hotspot
+    }
+    // 泡在内湾浅水里：可以摸一摸水面上漂着的螃蟹、虾和贝壳
+    if (player.swimming && seabed.inBed(player.x, player.z)) {
+      return { kind: 'shell', id: 'shell', label: '捡贝壳', x: player.x, z: player.z, radius: 1.2 } satisfies Hotspot
+    }
     const nearby = resolveInteraction(player, animals, exhibits)
     if (nearby?.kind === 'fishing' || nearby?.kind === 'wishing') return nearby
     const special = extension.gulls.hotspot(player) ?? extension.residents.hotspot(player)
     if (special) return special
     if (nearby && nearby.kind !== 'landmark') return nearby
-    // 站在停机坪旁边：按 E 驾驶直升机
-    if (Math.hypot(player.x - heli.home.x, player.z - heli.home.z) < 4.6) {
-      return { kind: 'heli', id: 'heli', label: FLIGHT.heli.label, x: heli.home.x, z: heli.home.z, radius: 4.6 } satisfies Hotspot
+    // 站在直升机旁边（村里的停机坪或外岛停机点）：按 E 驾驶
+    if (Math.hypot(player.x - world.helicopter.position.x, player.z - world.helicopter.position.z) < 4.6) {
+      return { kind: 'heli', id: 'heli', label: FLIGHT.heli.label,
+        x: world.helicopter.position.x, z: world.helicopter.position.z, radius: 4.6 } satisfies Hotspot
     }
     // 站在码头岸上：按 E 上船（泊位决定哪条船）。
     const berth = sailing.nearbyDock()
@@ -386,6 +571,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     if (transitionLocked || panelOpen || tracker.hasOpen()) return
     if(scope.active){scope.close();return}
     if(fishing.active){pastimes.reel();return}
+    if (activity.mode === 'sunset') { options.onActivityRequest('leave-sunset'); return }
     const hotspot = getInteraction()
     if (!hotspot) {
       if(activity.mode==='lookout')options.onActivityRequest('leave-lookout')
@@ -406,6 +592,93 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
       flight.toggle()
       options.onFlightNotice(FLIGHT.heli.start)
       return
+    }
+    if (hotspot.kind === 'dolphin') {
+      const dolphin = seabed.nearestDolphin(player.x, player.z)
+      if (dolphin) {
+        seabed.pet(dolphin)
+        options.play('greeting', { pitch: 1.18 })
+        options.onQuality('海豚转了个圈，蹭了蹭你的手。')
+      }
+      return
+    }
+    if (hotspot.kind === 'shell') {
+      const got = seabed.pick(player.x, player.z)
+      if (got) {
+        const total = addItem(got)
+        options.onQuality(`你从水里摸到了${got}（背包：${got}×${total}）`)
+      } else {
+        options.onQuality('水里晃了晃，什么也没摸到。')
+      }
+      return
+    }
+    if (hotspot.kind === 'shop' && hotspot.id === 'shop-store') {
+      const snack = SHOP_SNACKS[Math.floor(Math.random() * SHOP_SNACKS.length)]
+      const total = addItem(snack)
+      options.onQuality('你拿了一' + snack + '，放进背包（' + snack + '×' + total + '）。')
+      return
+    }
+    if (hotspot.kind === 'shop' && hotspot.id === 'shop-fortune') {
+      if (skyNight > 0.5) { options.onQuality('算子铺已经打烊，门口挂着「白日再来」。'); return }
+      options.onQuality('先生掐了掐指头：' + SHOP_FORTUNES[Math.floor(Math.random() * SHOP_FORTUNES.length)])
+      return
+    }
+    if (hotspot.kind === 'trampoline') {
+      // 这里只提示按 H 起蹦，E 不再做任何事
+      return
+    }
+    if (hotspot.kind === 'cloudgate') {
+      if (hotspot.id === 'tramp-gate') {
+        motion.teleport({ x: TRAMPOLINE.x, z: TRAMPOLINE.z }, 0.9)
+        options.onQuality('光圈把你送到了蹦床上。')
+      } else if (hotspot.id === 'cloud-gate-up') {
+        motion.teleport({ x: SKY_ISLAND.x, z: SKY_ISLAND.z + 3.5 }, SKY_ISLAND.top + 0.15)
+        options.onQuality('云层把你托了上去。')
+      } else {
+        motion.teleport({ x: CLOUD_GATE.x, z: CLOUD_GATE.z }, DECK)
+        options.onQuality('云缝送你回了栈桥。')
+      }
+      return
+    }
+    if (hotspot.kind === 'washer' && hotspot.id === 'firework') {
+      if (fireworkLaunch?.()) {
+        options.play('wishChime', { pitch: 1.2 })
+        options.onQuality('烟花升起来了。')
+      } else options.onQuality('上一束还没放完。')
+      return
+    }
+    if (hotspot.kind === 'washer' && hotspot.id === 'npc-farmer') {
+      const gift = FARMER_GIFTS[Math.floor(Math.random() * FARMER_GIFTS.length)]
+      const total = addItem(gift)
+      options.onQuality('果农塞给你一份' + gift + '（背包：' + gift + '×' + total + '）')
+      return
+    }
+    if (hotspot.kind === 'washer' && hotspot.id === 'npc-pilot') {
+      options.onQuality(NPC_DIALOGUE.pilot.say[0])
+      return
+    }
+    if (hotspot.kind === 'washer') {
+      options.play('greeting', { pitch: 1.05 })
+      const line = NPC_DIALOGUE.washer.say[Math.floor(Math.random() * NPC_DIALOGUE.washer.say.length)]
+      const total = addItem('洗好的衣裳')
+      options.onQuality(line + '（背包：洗好的衣裳×' + total + '）')
+      return
+    }
+    if (hotspot.kind === 'pick') {
+      const name = (hotspot as { title?: string }).title ?? '东西'
+      const total = addItem(name)
+      options.onQuality('摘到了' + name + '（背包：' + name + '×' + total + '）')
+      return
+    }
+    if (hotspot.kind === 'stargaze') {
+      // 山顶望远镜：直接进 scope 的放大视角，瞄准哪个星座就显示哪个星座的介绍
+      if (skyNight <= 0.55) { options.onQuality(SKY.daytimeNote); return }
+      void scope.open({ eye: SKY_EYE, pitch: -0.62, pitchLimit: 1.2 })
+        .catch(() => options.onQuality('望远镜细节暂不可用。'))
+      return
+    }
+    if (hotspot.kind === 'cow') {
+      options.onQuality('挤好了一桶牛奶。')
     }
     if (hotspot.kind==='chair') {
       const person = motion.player
@@ -437,7 +710,12 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
       if (!player.airborne) options.onActivityRequest(hotspot.kind)
     } else if (hotspot.kind === 'animal') {
       const animal = animals.nearby(player)
-      if (animal) { animals.pet(animal); options.play(animal.resident.species) }
+      if (animal) {
+        animals.pet(animal)
+        // 音效库里只有 cat / dog 两个，狐狸借猫的、狮子借狗的
+        const species = animal.resident.species
+        options.play(species === 'dog' || species === 'lion' ? 'dog' : 'cat')
+      }
     } else tracker.open(hotspot)
   }
   const controls = createControls({
@@ -446,7 +724,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     flightEnabled: () => options.settings().flight,
     canJump: () => !fishing.active && !panelOpen && !tracker.hasOpen() && !transitionLocked && !activity.mode,
     canMove: () => !motion.player.sitting && !fishing.active && !transitionLocked && !menuOpen && !scope.active && (activity.mode === null || activity.mode === 'lookout' || activity.mode==='drive'),
-    canLook: () => !transitionLocked && !panelOpen && (activity.mode !== 'sunset' && activity.mode !=='tour'),
+    canLook: () => !transitionLocked && !panelOpen && activity.mode !=='tour',
     canSteer: () => !transitionLocked && !menuOpen && activity.mode==='drive',
     sprintEnabled: ()=>!menuOpen,
     lockPointer: () => !fishing.active && !panelOpen && !scope.active,
@@ -511,7 +789,7 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     focusPlace(id?: string) { return activity.focusAt(places.find(place => place.hotspot.id === id)) },
     updateFirst(step:number, settings:Settings, reduced:boolean) {
       orbit.setFirstPerson(settings.view === 'first')
-      first.update(player,orbit.angles,{enabled:settings.view==='first' && activity.mode!=='sunset' && !scope.active,
+      first.update(player,orbit.angles,{enabled:settings.view==='first' && !scope.active,
         step,instant:reduced,bob:settings.bob && !reduced && !flight.active})
       return { blend:first.blend,yaw:first.heading }
     },
@@ -552,11 +830,41 @@ function createSceneFrame(options: RuntimeOptions, view: {
   }) => void;
   animals: ReturnType<typeof createHarborAnimals>; forest: ReturnType<typeof addHarborForest>
   mayor: ReturnType<typeof addHarborMayor>
+  farm: ReturnType<typeof createFarmLife>
+  cherryPetals: ReturnType<typeof createCherryPetals>
+  mapleLeaves: ReturnType<typeof createMapleLeaves>
+  pandas: ReturnType<typeof createPandas>
+  stars: ReturnType<typeof createStarSky>
+  swordsman: ReturnType<typeof createSwordsman>
+  bambooLeaves: ReturnType<typeof createBambooLeaves>
+  seabed: ReturnType<typeof createSeabed>
+  shopLife: ReturnType<typeof createShopLife>
+  chickens: ReturnType<typeof createChickens>
+  penShelters: ReturnType<typeof createPenShelters>
+  fireworks: ReturnType<typeof createFireworks>
+  willows: ReturnType<typeof addWillows>
+  washer: ReturnType<typeof createWasher>
+  arctic: ReturnType<typeof createArcticPeople>
+  hanfu: ReturnType<typeof createHanfuPeople>
+  palacePeople: ReturnType<typeof createPalacePeople>
+  helipadNpcs: ReturnType<typeof createHelipadNpcs>
   extension: SceneExtension
+  /** 长按空格滑翔 */
+  glide: (active: boolean) => void
+  /** 落进障碍时把人推出来 */
+  unstuck: () => boolean
   /** NPC 走完这一步后，把各自的碰撞盒挪过去 */
   syncActors: () => void
 }) {
-  const { session, avatar, animate, animals, forest, extension, mayor, syncActors } = frame
+  let lastFlash = 0
+  // 长按空格滑翔：只记录按键状态，真正的减速在 motion 里做
+  let spaceHeld = false
+  let glideNoticed = false
+  const onGlideDown = (event: KeyboardEvent) => { if (event.code === 'Space') spaceHeld = true }
+  const onGlideUp = (event: KeyboardEvent) => { if (event.code === 'Space') spaceHeld = false }
+  window.addEventListener('keydown', onGlideDown)
+  window.addEventListener('keyup', onGlideUp)
+  const { session, avatar, animate, animals, forest, extension, mayor, syncActors, farm, cherryPetals, mapleLeaves, pandas, bambooLeaves, stars, swordsman, seabed, shopLife, chickens, penShelters, willows, washer, arctic, hanfu, palacePeople, glide, helipadNpcs, unstuck, fireworks } = frame
   const { player, tracker, places, cameraObstacles, sailing, activity, flight, pastimes } = session
   const { scene, camera, output, canvas } = view
   const marker = createHotspotMarker(scene)
@@ -610,6 +918,36 @@ function createSceneFrame(options: RuntimeOptions, view: {
     extension.islands.update(motionTime,{weather:storm,tier:low?3:quality.tier})
     extension.seaLife.update(motionTime, { reduced: reduced || low })
     extension.chimney.update(step, reduced || low)
+    farm.update(step, { night: night > 0.5, reduced: reduced || low })
+    cherryPetals.update(step, reduced || low)
+    mapleLeaves.update(step, reduced || low)
+    pandas.update(step, { night: night > 0.5, reduced: reduced || low })
+    bambooLeaves.update(step, reduced || low)
+    swordsman.update(step, reduced)
+    stars.update(step, { night, clear: weather.rain < 0.2 && weather.snow < 0.2, reduced: reduced || low })
+    seabed.update(step, reduced || low)
+    shopLife.update(step, night, reduced)
+    chickens.update(step, reduced || low, weather.rain)
+    // 滑翔：收起斗篷后在空中长按空格；按住时 WASD 可以带方向
+    const canGlide = spaceHeld && !player.sailing && !player.swimming && player.airborne
+    glide(canGlide)
+    if (canGlide && !glideNoticed) { glideNoticed = true; options.onQuality('滑翔中——按住空格保持滑翔，WASD 调整方向。') }
+    if (!canGlide) glideNoticed = false
+    // 兜底：万一还是落进了障碍里，每秒检查一次把人推出来
+    if (!player.sitting && !player.sailing && !player.swimming) unstuck()
+    penShelters.update(weather.rain)
+    fireworks.update(step)
+    willows.update(step, reduced)
+    washer.update(step, reduced, night)
+    arctic.update(step, night, weather.rain < 0.2 && weather.snow < 0.2, reduced)
+    hanfu.update(step, night, weather.rain < 0.2 && weather.snow < 0.2, reduced)
+    palacePeople.update(step, night, weather.rain < 0.2 && weather.snow < 0.2, reduced)
+    helipadNpcs.update(step, reduced)
+    // 雷阵雨：闪电的起跳那一帧打一声雷
+    const flash = weather.flash ?? 0
+    if (flash > lastFlash + 0.4) options.thunder?.()
+    lastFlash = flash
+    skyNight = night
     extension.ambience(player, { mode: activity.mode, speed: sailing.vessel.speed, weather, mobile: options.simplified,
       flightWind: flightAudio(step, flight.active, flight.speed) })
     extension.scope.update(night>0.5,storm)
@@ -679,17 +1017,63 @@ function startHarbor(options: RuntimeOptions, view: { renderer: T.WebGLRenderer;
   const signObstacles = addHarborSigns(scene, kit)
   const canvas = renderer.domElement
   const pastimes = createHarborPastimes(scene,kit,{ play:options.play, notice:options.onQuality,
-    fishing:options.onFishing, landed:()=>options.onOpen(FISHING.place) })
+    fishing:options.onFishing, landed:(species)=>{ addItem(species.name); options.onOpen(FISHING.place) } })
   const propObstacles = [...exhibitSet.obstacles, ...signObstacles]
   const obstacles = [...walkingObstacles(propObstacles, world.treeTops), pastimes.altar]
   // 村长要按障碍表判断能不能走（不然会走进自己屋里），传副本避免把 NPC 跟随盒算进去。
   const mayor = addHarborMayor(scene, kit, [...obstacles])
   const animals = createHarborAnimals({ scene, kit, obstacles: [...obstacles], simplified: options.simplified })
+  // 牧场上的羊、牛和牧羊犬，以及岬角樱花树飘下来的花瓣、村长屋前的野花。
+  // 这些都是会动 / 只有几十厘米高的装饰，全部加在 scene 上，不进静态世界。
+  const farm = createFarmLife(scene, kit, (x, z) => canWalkAt(x, z, { obstacles, height: 0, radius: 0.3 }))
+  const cherryPetals = createCherryPetals(scene)
+  const mapleLeaves = createMapleLeaves(scene)
+  // 大枫树本身也放运行时：树冠会探到海面之上，进了烘焙会在水面上留"天面"。
+  addMapleTree(scene, kit)
+  // 岬角西南角的竹林 + 三只大熊猫：竹子细，进烘焙会在竹林里戳出一堆 6 米高的格子。
+  const bamboo = addBamboo(scene, kit)
+  const pandas = createPandas(scene, kit, bamboo.stalks)
+  const bambooLeaves = createBambooLeaves(scene)
+  // 夜空：流星与十二星座；山顶那台望远镜；后山林径的护卫「宁归一」。
+  const stars = createStarSky(scene)
+  addStargazerTelescope(scene, kit)
+  // 内湾浅水：螃蟹、虾、贝壳 + 两只可以摸的海豚
+  const seabed = createSeabed(scene, kit)
+  // 顶层平台的三块菜田（白菜/萝卜/辣椒/草莓/西瓜）
+  addVegetablePlots(scene, kit)
+  // 果树一排 + 围栏外六棵椰子树
+  addOrchard(scene, kit)
+  // 两间铺子的夜间状态：吊灯、打瞌睡的店员、'白日再来' 的告示
+  const shopLife = createShopLife(scene, kit)
+  // 平台上四处走的小鸡
+  const chickens = createChickens(scene, kit)
+  // 北侧栅栏边的一排松树 + 松鼠
+  addPines(scene, kit)
+  // 下雨时羊圈/牛圈/鸡圈的棚子
+  const penShelters = createPenShelters(scene, kit)
+  // 海上烟花点
+  const fireworks = createFireworks(scene)
+  fireworkLaunch = () => fireworks.launch()
+  // 西岸的柳树（枝条随风摆）和村长小屋旁的小秋千
+  const willows = addWillows(scene, kit)
+  // 西岸沙滩上洗衣服的老妇人
+  const washer = createWasher(scene, kit)
+  // 北极街区的居民
+  const arctic = createArcticPeople(scene, kit)
+  // 四合院街区的居民（汉服）
+  const hanfu = createHanfuPeople(scene, kit)
+  // 紫宫殿街区的侍从
+  const palacePeople = createPalacePeople(scene, kit)
+  // 停机坪平台上的果农与飞行员
+  const helipadNpcs = createHelipadNpcs(scene, kit)
+  const swordsman = createSwordsman(scene, kit)
+  createCottageFlora(scene, kit)
   const extension=prepareSceneExtension({scene,camera,kit},
     {obstacles:[...obstacles],animals,onChange:options.onScope,setAmbience:options.setAmbience})
   // NPC 的碰撞：每个村民、村长各挂一个跟随碰撞盒，玩家撞不过去。
   // 注意传给动物和村民的障碍表都是副本——不然他们会把自己的盒子当成墙，原地卡住。
-  const actors = [{ pose: mayor.pose, avatar: mayor.avatar }, ...extension.residents.followers]
+  const actors = [{ pose: mayor.pose, avatar: mayor.avatar }, { pose: swordsman.pose, avatar: swordsman.avatar },
+    ...extension.residents.followers]
     .map(item => ({ ...item, follow: followObstacle(ACTOR_RADIUS) }))
   for (const { follow } of actors) obstacles.push(follow.obstacle)
   const syncActors = () => {
@@ -702,15 +1086,17 @@ function startHarbor(options: RuntimeOptions, view: { renderer: T.WebGLRenderer;
   const session = installInteraction(options, camera, {
     exhibits: exhibitSet.exhibits, canvas, propObstacles, vessel: world.vessel, yacht: world.yacht,
     helicopter: world.helicopter,
-    animals, obstacles, extension, flightVolumes: world.flightVolumes, pastimes,
+    animals, obstacles, extension, flightVolumes: world.flightVolumes, pastimes, seabed,
   })
   cleanup.push(session.dispose)
   const avatar = createTravelAvatar(scene,kit)
   const { draw, setNight } = createSceneFrame(options, { scene, camera, output, canvas }, {
-    session, avatar, forest, animals,extension, mayor, syncActors,
+    session, avatar, forest, animals,extension, mayor, syncActors, farm, cherryPetals, mapleLeaves, pandas, bambooLeaves, stars, swordsman, seabed, shopLife, chickens, penShelters, fireworks, willows, washer, arctic, hanfu, palacePeople, helipadNpcs,
+    glide: (active: boolean) => session.glide(active),
+    unstuck: () => session.unstuck(),
     animate(elapsed, night, settings) {
       world.animate(elapsed, settings.bank)
-      captain(elapsed, settings.reduced)
+      captain(elapsed, night, settings.reduced, settings.weather.rain)
       animateAtmosphere(elapsed, night, settings)
     },
   })

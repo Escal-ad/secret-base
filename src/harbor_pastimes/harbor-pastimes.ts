@@ -14,7 +14,7 @@ import { addWishAltar, createWishLights } from './harbor-wish-lights'
 export type FishingNotice = { phase:FishingPhase; catch?:CatchSpecies }
 
 export function createHarborPastimes(scene:T.Scene, kit:ModelKit, hooks:{
-  play:EmitSound; notice:(message:string)=>void; fishing:(phase:FishingPhase)=>void; landed:()=>void
+  play:EmitSound; notice:(message:string)=>void; fishing:(phase:FishingPhase)=>void; landed:(species:CatchSpecies)=>void
 }) {
   const altar = addWishAltar(scene,kit)
   const lights = createWishLights(scene)
@@ -26,7 +26,7 @@ export function createHarborPastimes(scene:T.Scene, kit:ModelKit, hooks:{
   const fishing = createFishing({ play:hooks.play, change:hooks.fishing, landed(species) {
     result = species
     records.catchFish(species)
-    hooks.landed()
+    hooks.landed(species)
   } })
   return {
     altar, fishing,

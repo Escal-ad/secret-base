@@ -7,6 +7,7 @@ import { addScopeStand,createScope } from './harbor-scope'
 import type { ScopeDisplay } from './harbor-scope'
 import { createHarborWeather } from './harbor-weather'
 import { createChimneySmoke } from './harbor-chimney-smoke'
+import { zodiacTargets } from './harbor-stars'
 import { createAmbience } from './harbor-ambience'
 import type { SetAmbience } from './harbor-ambience'
 import type { ModelKit } from '../pixel_harbor/harbor_models'
@@ -27,6 +28,7 @@ export function prepareSceneExtension({scene,camera,kit}:View, options:Options) 
   const chimney=createChimneySmoke(scene)
   const scope=createScope(scene,{camera,onChange:options.onChange, targets:[
     ...islands.islands,...islands.ships,...residents.targets,...options.animals.targets,
+    ...zodiacTargets(),
     { id:GULL.id,title:GULL.title,object:gulls.actor,height:0.10 },
   ]})
   const ambience=createAmbience(options.setAmbience)

@@ -3,7 +3,7 @@ import { FLIGHT } from '../harbor_flight/harbor-flight-config'
 
 export const SETTINGS = {
   key: 'harbor_settings_v2', storageWarning: '无法保存或读取渔港设置，本次访问仍可调整。',
-  qualities: ['high', 'medium', 'low'], weather: ['clear', 'rain', 'snow'],
+  qualities: ['high', 'medium', 'low'], weather: ['clear', 'rain', 'snow', 'storm'],
   appearances: ['traveler', 'variant', 'original'], tracks: ['auto', 'boy', 'baguira', 'sudo'],
   loadLines: ['正在布置码头', '正在加载渔港场景'], loadingLineMs: 1700,
   lowQualityNotice: '当前设备建议使用低画质，可在设置中调整。',

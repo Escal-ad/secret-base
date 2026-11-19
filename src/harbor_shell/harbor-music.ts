@@ -40,7 +40,8 @@ export function createMusicTransport(context: AudioContext, output: AudioNode) {
       const time = context.currentTime
       const level = context.createGain()
       level.connect(output)
-      const offset = Math.min(positions.get(id) ?? 0, Math.max(0, buffer.duration - 0.1))
+      // 每次切歌都从头播放，不从上次断开的位置续上
+      const offset = 0
       level.gain.setValueAtTime(SILENCE, time)
       level.gain.linearRampToValueAtTime(1, time + AUDIO.crossfade)
       playing = { id, level, buffer, voice: start(buffer, level, { time, offset, fade: 0 }) }

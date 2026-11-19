@@ -8,7 +8,8 @@ type FishingWeather = { night:boolean; weather:Weather }
 
 function catchFromPool({ night, weather }: FishingWeather, random: () => number) {
   const pool = FISHING.pool.map(species =>
-    species.weight * (night ? species.night : 1) * (weather === 'clear' ? 1 : species[weather]))
+    species.weight * (night ? species.night : 1)
+      * (weather === 'clear' ? 1 : weather === 'storm' ? species.rain * 1.25 : species[weather]))
   let needle = random() * pool.reduce((total, weight) => total + weight, 0)
   return FISHING.pool[pool.findIndex(weight => (needle -= weight) < 0)] ?? FISHING.pool[0]
 }

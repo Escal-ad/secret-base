@@ -66,14 +66,19 @@ function makeClouds() {
   const group = new T.Group()
   const { canvas, context } = makeCanvas(100, 22)
   const random = seededRandom(72)
+  // 用 rgba() 而不是 #rrggbbaa：8 位十六进制在部分环境里解析不了，
+  // 会退回上一个颜色（默认黑），云就变成一块块黑斑。
+  const tints = ['rgba(251,224,201,0.30)', 'rgba(255,230,205,0.44)', 'rgba(255,240,216,0.59)']
+  context.clearRect(0, 0, canvas.width, canvas.height)
   for (let index = 0; index < 27; index++) {
     const x = 8 + (random() * 76 | 0)
     const y = 3 + (random() * 12 | 0)
     const width = 6 + (random() * 16 | 0)
-    context.fillStyle = ['#fbe0c94d', '#ffe6cd70', '#fff0d896'][index % 3]
+    context.fillStyle = tints[index % tints.length]
     context.fillRect(x, y, width, 1 + index % 3)
   }
-  const material = new T.SpriteMaterial({ map: pixelTexture(canvas), depthWrite: false, fog: false })
+  const material = new T.SpriteMaterial({ map: pixelTexture(canvas), color: '#ffffff',
+    transparent: true, alphaTest: 0.02, depthWrite: false, fog: false })
   for (let index = 0; index < 22; index++) {
     const angle = index * 2.39996
     const cloud = new T.Sprite(material)
@@ -135,6 +140,8 @@ export function addAtmosphere(scene: T.Scene) {
     fog.density = T.MathUtils.lerp(fog.density, snowing > wet ? WEATHER.snowFog : WEATHER.wetFog, amount)
     fog.density = Math.max(fog.density, settings.edgeFog)
     light.intensity *= T.MathUtils.lerp(1, snowing > wet ? WEATHER.snowLight : WEATHER.rainLight, amount)
+    // 雷阵雨：闪电那一瞬把天光提亮一档
+    if (weather?.flash) light.intensity *= 1 + weather.flash * 2.4
     for (const cloud of clouds.children) (cloud as T.Sprite).material.opacity = (1 - night * 0.91) * (1 - amount * 0.55)
   }
 }

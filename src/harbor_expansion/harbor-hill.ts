@@ -2,17 +2,12 @@ import * as T from 'three'
 import { HILL, hillElevation } from './harbor-hill-config'
 import { DECK } from '../pixel_harbor/harbor_terrain'
 import type { Footprint } from '../pixel_harbor/harbor_layout'
-import type { ModelKit, Point } from '../pixel_harbor/harbor_models'
+import type { ModelKit } from '../pixel_harbor/harbor_models'
 import { makeCanvas, pixelTexture, seededRandom } from '../pixel_harbor/harbor_materials'
-import { markHarborGlow } from '../pixel_harbor/harbor_glow'
 import type { CameraObstacle } from '../pixel_harbor/harbor_orbit_camera'
 
 const GRASS = '#819471'
 const ROCK = '#8c8878'
-const TRAIL = '#b7a384'
-const RAIL = '#896a50'
-const PATH_CLEARANCE = 0.016
-const PATH_THICKNESS = 0.06
 
 function surface(x: number, z: number) { return DECK + hillElevation(x, z) }
 
@@ -43,34 +38,24 @@ function plants() {
     const x = left + (right - left) * (0.08 + random() * 0.84)
     const z = index % 2 === 0 ? near + 0.48 : far - 0.48
     return { x, z, size: 0.8 + random() * 0.45 }
-  }).filter(({ x, z }) => Math.hypot(x + 47.1, z + 7.8) > 2.1)
+  })
+    // 山顶那块平地（x ≤ -44，海拔已经封顶）不长树：只留草地、长凳和大枫树。
+    // 另外把山头中心 5 米内也清空，免得小枫树正好戳在长凳和大枫树中间。
+    .filter(({ x }) => x > HILL.summitAt)
+    .filter(({ x, z }) => Math.hypot(x + 46.5, z + 6) > 5)
+    .filter(({ x, z }) => Math.hypot(x + 47.1, z + 7.8) > 2.1)
 }
 
 const TREES = plants()
-
-function railEnds(from: Point, to: Point): [Point, Point] {
-  const yaw = Math.atan2(to[0]-from[0],to[2]-from[2])
-  const ox=Math.cos(yaw)*HILL.railOffset,oz=-Math.sin(yaw)*HILL.railOffset
-  function cap([x,,z]:Point, offset: number):Point {
-    const px=x+ox+Math.sin(yaw)*offset, pz=z+oz+Math.cos(yaw)*offset
-    return [px,surface(px,pz)+HILL.railHeight,pz]
-  }
-  return [cap(from,HILL.railEndGap),cap(to,-HILL.railEndGap)]
-}
 
 function squareFootprint(x:number,z:number,radius:number):Footprint {
   return [x-radius,x+radius,z-radius,z+radius]
 }
 
-export const HILL_OBSTACLES: Footprint[] = [
-  ...TREES.map(({ x, z })=>squareFootprint(x,z,0.14)),
-  ...HILL.stairRuns.flatMap(index=>{
-    const [x,z]=HILL.trail[index-1], [u,v]=HILL.trail[index]
-    return railEnds([x,0,z],[u,0,v]).map(([px,,pz])=>squareFootprint(px,pz,HILL.railThickness/2))
-  }),
-]
+export const HILL_OBSTACLES: Footprint[] = TREES.map(({ x, z })=>squareFootprint(x,z,0.14))
 
-const HILL_TREE_PARTS = [[0.62, 0.24, 1.24, '#725440'], [1.39, 0.92, 0.77, '#5d7764'], [1.89, 0.63, 0.41, '#79906e']] as const
+// 后山整片林子换成枫树：树干/树冠的分层尺寸完全照旧（等比例），只把叶子换成秋色。
+const HILL_TREE_PARTS = [[0.62, 0.24, 1.24, '#725440'], [1.39, 0.92, 0.77, '#c0562f'], [1.89, 0.63, 0.41, '#d98736']] as const
 export const HILL_FLIGHT_VOLUMES: CameraObstacle[] = TREES.flatMap(({ x, z, size }) =>
   HILL_TREE_PARTS.map(([y, width, height]) => ({
     footprint: squareFootprint(x, z, width * size / 2), base: surface(x, z) + (y - height / 2) * size, height: height * size,
@@ -91,52 +76,16 @@ function addTrees(group: T.Group, kit: ModelKit) {
   }
 }
 
-function addStairRun(kit: ModelKit, [from, to]: [Point, Point]) {
-  const group = new T.Group()
-  const dx = to[0] - from[0], dz = to[2] - from[2]
-  const yaw = Math.atan2(dx, dz)
-  for(let index=1;index<=HILL.treadCount;index++){
-    const progress=index/(HILL.treadCount+1)
-    const x=from[0]+dx*progress,z=from[2]+dz*progress
-    const tread=kit.box([x,surface(x,z),z],[HILL.treadWidth,HILL.treadHeight,HILL.treadDepth],[ROCK,'brick'])
-    tread.rotation.y=yaw
-    group.add(tread)
-  }
-  const caps=railEnds(from,to)
-  const [start,end]=caps
-  group.add(kit.beam([start,end],HILL.railThickness,[RAIL,'wood']))
-  for(const [x,y,z] of caps) group.add(kit.box([x,y-HILL.railHeight/2,z],
-    [HILL.railThickness,HILL.railHeight,HILL.railThickness],[RAIL,'wood']))
-  return group
-}
-
-function addTrail(group: T.Group, kit: ModelKit) {
-  for (let index = 1; index < HILL.trail.length; index++) {
-    const [x,z] = HILL.trail[index - 1]
-    const [u,v] = HILL.trail[index]
-    const from: Point = [x, surface(x,z) + PATH_CLEARANCE, z]
-    const to: Point = [u, surface(u,v) + PATH_CLEARANCE, v]
-    const road = kit.beam([from,to], HILL.trailWidth, [TRAIL,'brick'])
-    road.scale.z = PATH_THICKNESS
-    road.rotateY(Math.PI / 2)
-    group.add(road)
-    if (HILL.stairRuns.some(run=>run===index)) group.add(addStairRun(kit,[from,to]))
-    const px = x + 0.52; const pz = z - 0.91; const py = surface(px,pz)
-    group.add(kit.box([px, py + 0.49,pz],[0.11,0.98,0.11],[RAIL]))
-    if (index % 2) group.add(markHarborGlow(kit.box([px,py+1.04,pz],[0.19,0.20,0.19],['#f2c48b']),'street'))
-  }
-}
-
 export function addHarborHill(group: T.Group, kit: ModelKit) {
   for (const footprint of summitCells) group.add(makeSlope(kit, footprint))
   addTrees(group, kit)
-  addTrail(group, kit)
+  // 山道（石板路 + 台阶 + 扶手 + 路灯）已经按用户要求全部撤掉，山顶只留草地、长凳和大枫树。
   const { canvas, context } = makeCanvas(128, 32)
-  context.fillStyle = RAIL; context.fillRect(0,0,128,32)
+  context.fillStyle = '#896a50'; context.fillRect(0,0,128,32)
   context.fillStyle = '#fff0d4'; context.font = 'bold 19px sans-serif'; context.textAlign = 'center'
   context.fillText(HILL.title,64,23)
   const sign = new T.Mesh(new T.PlaneGeometry(1.12,0.28),new T.MeshBasicMaterial({map:pixelTexture(canvas),side:T.DoubleSide}))
   sign.position.set(-24.8,DECK+1.26,-11.88)
   sign.rotation.y = Math.PI / 2
-  group.add(sign, kit.box([-24.8,DECK+0.61,-11.88],[0.12,1.22,0.12],[RAIL]))
+  group.add(sign, kit.box([-24.8,DECK+0.61,-11.88],[0.12,1.22,0.12],['#896a50']))
 }

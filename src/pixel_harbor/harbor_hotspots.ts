@@ -7,8 +7,14 @@ import { PLACE_LABELS } from './harbor_places_config'
 type Position = { x: number; z: number }
 type Place = Position & { id: string; label: string; radius: number }
 export type Hotspot = Place & (
-  | { kind: 'art' | 'portfolio' | 'notice' | 'eval' | 'mayor' | 'lookout' | 'sunset' | 'animal' | 'captain' | 'telescope' | 'dock' | 'fishing' | 'wishing' | 'chair' | 'heli' }
+  | { kind: 'art' | 'portfolio' | 'notice' | 'eval' | 'mayor' | 'lookout' | 'sunset' | 'animal' | 'captain' | 'telescope' | 'dock' | 'fishing' | 'wishing' | 'chair' | 'heli' | 'cow' | 'dolphin' | 'shell' }
   | { kind: 'resident' | 'gull'; title: string; note?: string }
+  | { kind: 'stargaze'; title: string; note: string }
+  | { kind: 'pick'; title: string; ready?: boolean }
+  | { kind: 'shop'; title: string; note: string }
+  | { kind: 'cloudgate'; title: string; note: string }
+  | { kind: 'washer'; title: string; note: string }
+  | { kind: 'trampoline'; title: string; note: string }
   | { kind: 'landmark'; note: string }
   | { kind: 'sea'; note: string; title: string }
 )
