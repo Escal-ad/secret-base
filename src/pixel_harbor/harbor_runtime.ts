@@ -455,7 +455,9 @@ function installInteraction(options: RuntimeOptions, camera: T.PerspectiveCamera
     }
     // 海上蹦床：站上去按 E 弹起来
     if (Math.hypot(player.x - TRAMPOLINE.x, player.z - TRAMPOLINE.z) < TRAMPOLINE.size * 0.55) {
-      return { kind: 'trampoline', id: 'trampoline', label: '按 H 开始起蹦', title: '海上蹦床',
+      const touch = window.matchMedia('(pointer: coarse)').matches
+      return { kind: 'trampoline', id: 'trampoline',
+        label: touch ? '点这里起蹦' : '按 H 开始起蹦', title: '海上蹦床',
         note: '按 H 起跳（弹得比灯塔还高），按 E 回栈桥。', x: TRAMPOLINE.x, z: TRAMPOLINE.z,
         radius: TRAMPOLINE.size * 0.55 } satisfies Hotspot
     }
