@@ -7,7 +7,7 @@ export const harborProfile = {
   email: 'escal_ad@163.com',
   links: [{
     label: '小红书',
-    url: 'https://www.rednote.com/user/profile/6657dd890000000007007a76?xsec_token=YBJ6KjkHOBMVJ3ZEQTgkyD-xJbTztT5Lea0ZOd3OdABgk%3D&xsec_source=app_share&xhsshare=WeixinSession&shareRedId=ODhDQzhLSE02NzUyOTgwNjc8OTlFPjg7&apptime=1795086259&share_id=92953633bc1b45eba4434213db0340db&share_channel=wechat&track_code=99MMWP3Vfmd',
+    url: 'https://www.rednote.com/user/profile/6657dd890000000007007a76',
   }, {
     label: '个人网站',
     url: 'https://escal-ad.github.io/secret-base/',
